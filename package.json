@@ -1,0 +1,9 @@
+{
+  "name": "deterministic-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "mycli": "bin/cli.js" },
+  "dependencies": {
+    "ws": "^8.0.0"
+  }
+}
