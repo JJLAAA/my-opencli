@@ -38,3 +38,55 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: Add intercept and transform pipeline steps
+
+**Date**: 2026-04-25
+**Task**: Add intercept and transform pipeline steps
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| 变更 | 说明 |
+|------|------|
+| `intercept` step | 注入 fetch/XHR 拦截器，支持 navigate/evaluate/click/scroll 触发，捕获匹配 URL 的网络响应 |
+| `select` step | dot-path 深层取值，支持数字索引访问数组 |
+| `sort` step | 按字段排序，asc/desc，localeCompare 自然排序 |
+| `map` 改进 | 支持 inline select 子键，新增 data/root 模板上下文变量 |
+| `filter` 改进 | 表达式上下文新增 data 变量 |
+| CDPSession 扩展 | 新增 installInterceptor、waitForCapture、getInterceptedRequests、click、scroll 方法 |
+| env var 重命名 | OPENCLI_CDP_ENDPOINT → TAP_CDP_ENDPOINT |
+| spec 更新 | quality-guidelines.md 支持操作列表加入新 step |
+
+**测试验证**：navigate to `about:blank` + evaluate trigger fetch → intercept 成功捕获 jsonplaceholder API 响应并输出表格。
+
+**Updated Files**:
+- `src/cdp.js`
+- `src/executor.js`
+- `bin/cli.js`
+- `.trellis/spec/backend/quality-guidelines.md`（及其他 spec 填写）
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `edd2692` | (see git log) |
+| `79847db` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
