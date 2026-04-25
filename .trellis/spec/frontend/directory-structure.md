@@ -1,54 +1,39 @@
 # Directory Structure
 
-> How frontend code is organized in this project.
+> How adapters are organized in this project.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's frontend directory structure here.
-
-Questions to answer:
-- Where do components live?
-- How are features/modules organized?
-- Where are shared utilities?
-- How are assets organized?
--->
-
-(To be filled by the team)
+"Frontend" in TAP refers to **adapters** — the user-facing DSL files that define what to fetch and how to transform it. Adapters are the extension point; the core engine is backend.
 
 ---
 
 ## Directory Layout
 
 ```
-<!-- Replace with your actual structure -->
-src/
-├── ...
-└── ...
+adapters/
+├── bilibili/
+│   └── hot.js       # bilibili hot videos
+└── linuxdo/
+    └── news.js      # linux.do news feed
 ```
 
----
-
-## Module Organization
-
-<!-- How should new features be organized? -->
-
-(To be filled by the team)
+At runtime, adapters are loaded from `~/.tap/adapters/<site>/<command>.js`.  
+The `adapters/` directory in the repo is the source; install to `~/.tap/adapters/` to use.
 
 ---
 
 ## Naming Conventions
 
-<!-- File and folder naming rules -->
-
-(To be filled by the team)
+- Site directory: lowercase, no hyphens (e.g., `bilibili`, `linuxdo`, `hackernews`)
+- Command file: lowercase, no hyphens (e.g., `hot.js`, `news.js`, `top.js`)
+- Path pattern: `adapters/<site>/<command>.js`
 
 ---
 
 ## Examples
 
-<!-- Link to well-organized modules as examples -->
-
-(To be filled by the team)
+- `adapters/bilibili/hot.js` — CDP-based adapter (navigate + evaluate)
+- `adapters/linuxdo/news.js` — CDP-based adapter (navigate + evaluate using browser fetch)

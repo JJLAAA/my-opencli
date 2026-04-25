@@ -1,59 +1,115 @@
-# Component Guidelines
+# Adapter Guidelines
 
-> How components are built in this project.
+> How adapters are structured in this project.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's component conventions here.
-
-Questions to answer:
-- What component patterns do you use?
-- How are props defined?
-- How do you handle composition?
-- What accessibility standards apply?
--->
-
-(To be filled by the team)
+Each adapter is a `.js` file with a single default export containing three fields: `args`, `columns`, `pipeline`.
 
 ---
 
-## Component Structure
+## Adapter Structure
 
-<!-- Standard structure of a component file -->
-
-(To be filled by the team)
+```js
+export default {
+  args: [{ name: 'limit', default: 20 }],
+  columns: ['rank', 'title', 'author', 'play'],
+  pipeline: [
+    { navigate: 'https://www.bilibili.com' },
+    { evaluate: `(async () => {
+      const res = await fetch('https://api.bilibili.com/...', { credentials: 'include' });
+      const data = await res.json();
+      return (data?.data?.list || []).map(v => ({ title: v.title, ... }));
+    })()` },
+    { map: {
+      rank:   '${{ index + 1 }}',
+      title:  '${{ item.title }}',
+    }},
+    { limit: '${{ args.limit }}' },
+  ],
+};
+```
 
 ---
 
-## Props Conventions
+## Field Conventions
 
-<!-- How props should be defined and typed -->
+### `args`
+Array of argument definitions. Each entry: `{ name, default }`.  
+`default` is required. String args stay strings; numeric args use number defaults.
 
-(To be filled by the team)
+```js
+args: [
+  { name: 'limit', default: 20 },
+  { name: 'page', default: 1 },
+]
+```
+
+### `columns`
+Array of column names for table output. Order determines display order.  
+Must match keys produced by the final `map` step.
+
+```js
+columns: ['rank', 'title', 'author', 'play']
+```
+
+### `pipeline`
+Array of steps. Each step is a single-key object: `{ op: params }`.
+
+Supported ops:
+
+| Op | Params | Description |
+|----|--------|-------------|
+| `navigate` | URL string | Open URL in Chrome tab (establishes cookie context) |
+| `evaluate` | JS expression string | Run JS in browser page, returns value |
+| `fetch` | URL string or `{ url }` | HTTP GET, returns parsed JSON |
+| `map` | object of `{ field: template }` | Transform each item |
+| `filter` | JS expression string | Keep items where expression is truthy |
+| `limit` | number or template | Slice data to N items |
 
 ---
 
-## Styling Patterns
+## Template Syntax
 
-<!-- How styles are applied (CSS modules, styled-components, Tailwind, etc.) -->
+Use `${{ expr }}` in string values within `map` and `navigate`/`fetch` params.
 
-(To be filled by the team)
+Available variables:
+- `item` — current array item (in `map`, `filter`)
+- `index` — 0-based index (in `map`, `filter`)
+- `args` — parsed CLI args object
+- `data` — current pipeline data (in `navigate`, `fetch` params)
+
+```js
+{ map: {
+  rank:  '${{ index + 1 }}',
+  title: '${{ item.title }}',
+  url:   '${{ args.baseUrl }}/item/${{ item.id }}',
+}}
+```
 
 ---
 
-## Accessibility
+## CDP Adapters (navigate + evaluate)
 
-<!-- A11y requirements and patterns -->
+When the adapter needs browser cookies (logged-in APIs), use `navigate` to establish context, then `evaluate` to call the API from within the page:
 
-(To be filled by the team)
+```js
+{ navigate: 'https://site.com' },           // sets cookie context
+{ evaluate: `(async () => {
+  const res = await fetch('/api/...', { credentials: 'include' });
+  return (await res.json()).items;
+})()` },
+```
+
+The `evaluate` string must be a self-contained JS expression that returns a value (or a Promise).
 
 ---
 
 ## Common Mistakes
 
-<!-- Component-related mistakes your team has made -->
-
-(To be filled by the team)
+- **Forgetting `credentials: 'include'`** in `evaluate` fetch calls — cookies won't be sent
+- **Using `export const` instead of `export default`** — CLI expects `default`
+- **Column names not matching `map` keys** — rows will show empty cells
+- **Using hyphens in site/command names** — path convention is no hyphens

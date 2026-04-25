@@ -1,51 +1,36 @@
 # Logging Guidelines
 
-> How logging is done in this project.
+> How output and errors are written in this project.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's logging conventions here.
+No logging framework. Two channels only:
 
-Questions to answer:
-- What logging library do you use?
-- What are the log levels and when to use each?
-- What should be logged?
-- What should NOT be logged (PII, secrets)?
--->
-
-(To be filled by the team)
+| Channel | Use case |
+|---------|----------|
+| `console.log` | Normal output — pipeline results via `printOutput()` |
+| `console.error` | User-facing errors before `process.exit(1)` |
 
 ---
 
-## Log Levels
+## Rules
 
-<!-- When to use each level: debug, info, warn, error -->
-
-(To be filled by the team)
-
----
-
-## Structured Logging
-
-<!-- Log format, required fields -->
-
-(To be filled by the team)
+- **Never use `console.log` for errors** — always `console.error`
+- **Never use `console.error` for data output** — data always goes through `printOutput()`
+- **No debug logging in committed code** — remove any `console.log` debug traces before committing
+- **No log levels, no timestamps, no structured log objects** — this is a CLI, not a server
 
 ---
 
-## What to Log
+## Examples
 
-<!-- Important events to log -->
+```js
+// User error → stderr + exit
+console.error(`Adapter not found: ${adapterPath}`);
+process.exit(1);
 
-(To be filled by the team)
-
----
-
-## What NOT to Log
-
-<!-- Sensitive data, PII, secrets -->
-
-(To be filled by the team)
+// Data output → stdout via printOutput
+printOutput(result, format, adapter.columns);
+```
