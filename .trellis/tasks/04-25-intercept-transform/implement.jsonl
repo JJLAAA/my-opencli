@@ -1,0 +1,8 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Forbidden patterns, supported ops list must be updated"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Error propagation pattern for unknown ops"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Module layout rules"}
+{"file": "src/executor.js", "reason": "Existing step dispatch pattern to follow"}
+{"file": "src/cdp.js", "reason": "CDPSession class to extend"}
+{"file": "bin/cli.js", "reason": "needsBrowser detection to update"}

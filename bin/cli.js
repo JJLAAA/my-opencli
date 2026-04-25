@@ -38,7 +38,7 @@ const { default: adapter } = await import(pathToFileURL(adapterPath).href);
 for (const def of adapter.args ?? [])
   if (args[def.name] === undefined) args[def.name] = def.default;
 
-const needsBrowser = adapter.pipeline.some(s => 'navigate' in s || 'evaluate' in s);
+const needsBrowser = adapter.pipeline.some(s => 'navigate' in s || 'evaluate' in s || 'intercept' in s);
 
 let session = null, targetId = null, base = null;
 try {
