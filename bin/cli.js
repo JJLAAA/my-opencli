@@ -1,15 +1,16 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { openSession, closeTab } from '../src/cdp.js';
 import { executePipeline } from '../src/executor.js';
 import { printOutput } from '../src/output.js';
 import { pathToFileURL } from 'node:url';
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 const [site, command, ...rest] = process.argv.slice(2);
 
 if (!site || !command) {
-  console.error('Usage: mycli <site> <command> [--key value] [--format table|json]');
+  console.error('Usage: tap <site> <command> [--key value] [--format table|json]');
   process.exit(1);
 }
 
@@ -25,7 +26,8 @@ for (let i = 0; i < rest.length; i++) {
 const format = args.format ?? 'table';
 delete args.format;
 
-const adapterPath = resolve(`adapters/${site}/${command}.js`);
+const adaptersDir = process.env.TAP_ADAPTERS_DIR ?? join(homedir(), '.tap', 'adapters');
+const adapterPath = join(adaptersDir, site, `${command}.js`);
 if (!existsSync(adapterPath)) {
   console.error(`Adapter not found: ${adapterPath}`);
   process.exit(1);

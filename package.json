@@ -1,8 +1,11 @@
 {
-  "name": "deterministic-cli",
+  "name": "tap",
   "version": "0.1.0",
   "type": "module",
-  "bin": { "mycli": "bin/cli.js" },
+  "bin": { "tap": "bin/cli.js" },
+  "scripts": {
+    "build": "bun build --compile bin/cli.js --outfile tap"
+  },
   "dependencies": {
     "ws": "^8.0.0"
   }
