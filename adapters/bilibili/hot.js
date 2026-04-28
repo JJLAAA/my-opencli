@@ -1,5 +1,6 @@
 export default {
-  args: [{ name: 'limit', default: 20 }],
+  description: 'List currently popular videos from Bilibili.',
+  args: [{ name: 'limit', default: 20, description: 'Maximum number of videos to print.' }],
   columns: ['rank', 'title', 'author', 'play'],
   pipeline: [
     { navigate: 'https://www.bilibili.com' },

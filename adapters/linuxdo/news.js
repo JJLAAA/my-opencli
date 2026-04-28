@@ -1,5 +1,6 @@
 export default {
-  args: [{ name: 'limit', default: 3 }],
+  description: 'List the latest topics from the linux.do news category.',
+  args: [{ name: 'limit', default: 3, description: 'Maximum number of topics to print.' }],
   columns: ['rank', 'title'],
   pipeline: [
     { navigate: 'https://linux.do/c/news/34' },

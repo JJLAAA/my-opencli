@@ -4,7 +4,9 @@
   "type": "module",
   "bin": { "tap": "bin/cli.js" },
   "scripts": {
-    "build": "bun build --compile bin/cli.js --outfile tap"
+    "build": "bun build --compile bin/cli.js --outfile tap",
+    "build:npm": "bun run scripts/build-npm.js",
+    "publish:npm": "bun run scripts/build-npm.js && cd npm && npm publish"
   },
   "dependencies": {
     "ws": "^8.0.0"

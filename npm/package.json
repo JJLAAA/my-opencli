@@ -1,0 +1,24 @@
+{
+  "name": "@company/tap",
+  "version": "0.1.0",
+  "description": "CLI tool for executing declarative data pipelines",
+  "bin": {
+    "tap": "run.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": [
+    "run.js",
+    "install.js",
+    "binaries/",
+    "adapters/",
+    "skills/"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.company.com"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
