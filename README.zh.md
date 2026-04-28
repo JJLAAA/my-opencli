@@ -16,7 +16,7 @@ tap <site> <command> [--key value] [--format table|json]
 
 ## 工作原理
 
-TAP 将**抓取什么**与**如何抓取**分离：
+TAP 将**抓取什么**与**如何抓取**分离(意图与实现分离)：
 
 - **适配器**（`~/.tap/adapters/<site>/<command>.js`）声明 pipeline —— 一系列描述数据来源和转换方式的步骤。
 - **核心引擎**负责执行步骤、管理浏览器会话、格式化输出。
@@ -330,7 +330,7 @@ pipeline: [
 ```bash
 # macOS
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-  --remote-debugging-port=9222 --no-first-run --no-default-browser-check
+  --remote-debugging-port=9222 --no-first-run --no-default-browser-check --headless --user-data-dir=~/.chrome-automation-profile
 
 # Linux
 google-chrome --remote-debugging-port=9222
