@@ -20,8 +20,10 @@ function sectionTitle(text) {
 export function globalHelp() {
   const adapters = listAdapters();
   const lines = [
-    'Usage: tap <site> <command> [--key value] [--format table|json]',
+    'Usage: tap <site> <command> [--key value] [--format json|table]',
     '       tap help [site] [command]',
+    '',
+    'Default output is JSON for agent-friendly parsing. Use --format table for human-readable output.',
     '',
     sectionTitle('Commands'),
     '  help              Show global, site, or command help',
@@ -40,8 +42,10 @@ export function globalHelp() {
 
 export function siteHelp(site, commands) {
   const lines = [
-    `Usage: tap ${site} <command> [--key value] [--format table|json]`,
+    `Usage: tap ${site} <command> [--key value] [--format json|table]`,
     `       tap help ${site} <command>`,
+    '',
+    'Default output is JSON. Use --format table for human-readable output.',
     '',
     sectionTitle(`Commands for ${site}`),
   ];
@@ -54,10 +58,12 @@ export function commandHelp(site, command, adapter) {
   const args = adapter.args ?? [];
   const usageSuffix = args.map(formatArgUsage).join('');
   const lines = [
-    `Usage: tap ${site} ${command}${usageSuffix} [--format table|json]`,
+    `Usage: tap ${site} ${command}${usageSuffix} [--format json|table]`,
   ];
 
   if (adapter.description) lines.push('', adapter.description);
+
+  lines.push('', 'Default output is JSON. Use --format table for human-readable output.');
 
   if (args.length) {
     lines.push('', sectionTitle('Options'));

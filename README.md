@@ -9,7 +9,7 @@ A lightweight CLI tool for executing declarative data pipelines that fetch and t
 *[中文文档](README.zh.md)*
 
 ```
-tap <site> <command> [--key value] [--format table|json]
+tap <site> <command> [--key value] [--format json|table]
 ```
 
 ## How It Works
@@ -68,7 +68,7 @@ tap bilibili hot --help
 # Run a command
 tap bilibili hot
 tap bilibili hot --limit 10
-tap bilibili hot --format json
+tap bilibili hot --format table
 tap linuxdo news --limit 5
 ```
 
@@ -76,8 +76,8 @@ tap linuxdo news --limit 5
 
 | Flag | Description |
 |------|-------------|
-| `--format table` | ASCII table (default) |
-| `--format json` | JSON array |
+| _(default)_ / `--format json` | JSON array for agent-friendly parsing |
+| `--format table` | ASCII table for human-readable output |
 
 ---
 
@@ -417,13 +417,18 @@ If stuck, the skill has a fallback path for each failure mode (403, empty array,
 ```bash
 tap bilibili hot
 tap bilibili hot --limit 5
-tap bilibili hot --format json
+tap bilibili hot --format table
 ```
 
-```
-rank | title                          | author      | play
------+--------------------------------+-------------+---------
-1    | ...                            | ...         | 1234567
+```json
+[
+  {
+    "rank": "1",
+    "title": "...",
+    "author": "...",
+    "play": "1234567"
+  }
+]
 ```
 
 ### Built-in: Linux.do News

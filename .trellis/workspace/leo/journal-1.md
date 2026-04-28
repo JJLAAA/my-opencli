@@ -123,3 +123,50 @@ Extracted CLI logic into src modules (cli.js, adapters.js, help.js), implemented
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Close CLI help discovery task
+
+**Date**: 2026-04-28
+**Task**: Close CLI help discovery task
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Description |
+|------|-------------|
+| Task closure | Marked `04-27-cli-help-discovery` complete and archived it under `.trellis/tasks/archive/2026-04/` |
+| Validation | Re-verified global help, site help, command help, user-facing error exits, and `bun run build` |
+| Execution path | Confirmed the CLI still executes adapter pipelines via a temporary adapter mounted through `TAP_ADAPTERS_DIR` |
+
+**Updated Files**:
+- `.trellis/tasks/archive/2026-04/04-27-cli-help-discovery/task.json`
+- `.trellis/tasks/archive/2026-04/04-27-cli-help-discovery/prd.md`
+- `.trellis/tasks/archive/2026-04/04-27-cli-help-discovery/check.jsonl`
+- `.trellis/tasks/archive/2026-04/04-27-cli-help-discovery/debug.jsonl`
+- `.trellis/tasks/archive/2026-04/04-27-cli-help-discovery/implement.jsonl`
+- `.trellis/tasks/archive/2026-04/04-27-cli-help-discovery/tap-config-help-flow.drawio`
+- `.trellis/tasks/archive/2026-04/04-27-cli-help-discovery/tap-config-help-flow.png`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7f60f72` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

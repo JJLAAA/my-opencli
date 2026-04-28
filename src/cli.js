@@ -73,7 +73,7 @@ export async function runCli(argv = process.argv.slice(2)) {
   if (rest.some(isHelpToken)) printHelp(commandHelp(site, command, loaded.adapter));
 
   const args = parseArgs(rest);
-  const format = args.format ?? 'table';
+  const format = args.format ?? 'json';
   delete args.format;
 
   const { adapter } = loaded;

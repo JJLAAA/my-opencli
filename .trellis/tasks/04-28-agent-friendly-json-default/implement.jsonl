@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "CLI quality standards and allowed output behavior"}
+{"file": "src/cli.js", "reason": "Default output format resolution"}
+{"file": "src/help.js", "reason": "User-facing help text for format defaults"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Core CLI module responsibilities"}

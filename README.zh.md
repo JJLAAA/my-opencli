@@ -3,7 +3,7 @@
 一个轻量级 CLI 工具，用于执行声明式数据管道，从 Web 数据源抓取并转换数据。
 
 ```
-tap <site> <command> [--key value] [--format table|json]
+tap <site> <command> [--key value] [--format json|table]
 ```
 
 > TAP 是 [opencli](https://github.com/jackwener/opencli) 的简化版本。如需更完整的功能实现，请参考原项目。
@@ -70,7 +70,7 @@ tap bilibili hot --help
 # 执行命令
 tap bilibili hot
 tap bilibili hot --limit 10
-tap bilibili hot --format json
+tap bilibili hot --format table
 tap linuxdo news --limit 5
 ```
 
@@ -78,8 +78,8 @@ tap linuxdo news --limit 5
 
 | 参数 | 说明 |
 |------|------|
-| `--format table` | ASCII 表格（默认） |
-| `--format json` | JSON 数组 |
+| _（默认）_ / `--format json` | JSON 数组，便于 Agent 解析 |
+| `--format table` | ASCII 表格，便于人工阅读 |
 
 ---
 
@@ -392,13 +392,18 @@ skill 会引导你完成：
 ```bash
 tap bilibili hot
 tap bilibili hot --limit 5
-tap bilibili hot --format json
+tap bilibili hot --format table
 ```
 
-```
-rank | title                          | author      | play
------+--------------------------------+-------------+---------
-1    | ...                            | ...         | 1234567
+```json
+[
+  {
+    "rank": "1",
+    "title": "...",
+    "author": "...",
+    "play": "1234567"
+  }
+]
 ```
 
 ### 内置：Linux.do 新闻
