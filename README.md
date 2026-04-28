@@ -2,6 +2,12 @@
 
 A lightweight CLI tool for executing declarative data pipelines that fetch and transform data from web sources.
 
+> TAP is a simplified version of [opencli](https://github.com/jackwener/opencli). For a more complete implementation with richer features, see the original project.
+
+---
+
+*[中文文档](README.zh.md)*
+
 ```
 tap <site> <command> [--key value] [--format table|json]
 ```
