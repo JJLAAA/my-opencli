@@ -328,7 +328,10 @@ Adapters using `navigate`, `evaluate`, or `intercept` require a running Chrome i
 ```bash
 # macOS
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-  --remote-debugging-port=9222 --no-first-run --no-default-browser-check
+  --remote-debugging-port=9222 \
+  --user-data-dir=~/.chrome-automation-profile \
+  --no-first-run \
+  --no-default-browser-check
 
 # Linux
 google-chrome --remote-debugging-port=9222
@@ -353,6 +356,25 @@ Install [Claude Code](https://claude.ai/code), then in this repo:
 # The skill is at: .claude/skills/tap-adapter-author/
 # It's automatically available in Claude Code sessions
 ```
+
+The skill depends on the **chrome-devtools MCP** for automated reconnaissance (network monitoring and DOM inspection). Two manual steps are required before using it:
+
+1. **Configure chrome-devtools MCP** in your Claude Code settings.
+
+2. **Launch Chrome with remote debugging and log in** to any sites you plan to scrape:
+
+   ```bash
+   # macOS
+   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+     --remote-debugging-port=9222 \
+     --user-data-dir=~/.chrome-automation-profile \
+     --no-first-run \
+     --no-default-browser-check
+   ```
+
+   The skill reuses your existing browser session — it does not handle authentication itself.
+
+> **Planned**: automate both steps so no manual setup is needed.
 
 ### Workflow
 

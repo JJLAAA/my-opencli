@@ -64,6 +64,7 @@ DONE
        [ ] 在浏览器打开目标页面，打开 DevTools → Network 过滤 XHR/Fetch
        [ ] 观察：请求是否有 JSON 响应？URL 是否可以直接 curl？
        [ ] 判定 Pattern（A / B / C / D），见 references/patterns.md
+       ✋ 向用户汇报：Pattern 判断结果 + API 端点 URL，等待确认后再继续
 
 [ ] 3. 验证端点
        [ ] Pattern A：直接 curl 或 fetch 验证
@@ -74,13 +75,15 @@ DONE
 
 [ ] 4. 解码字段
        [ ] 找到 API 响应中目标字段的路径（可能有嵌套，如 data.list[0].title）
-       [ ] 列出要展示的字段和类型
+       [ ] 列出所有可用字段和类型（不要预先筛选，让用户选）
        [ ] 对比页面可见值确认字段映射正确（数量级 / 单位 / 格式）
+       ✋ 向用户汇报：列出全部候选字段 + 每个字段的示例值，询问用户需要哪些字段、展示顺序如何，等待确认后再继续
 
 [ ] 5. 设计接口
        [ ] args：用户可配的参数，如 [{ name: 'limit', default: 20 }]
-       [ ] columns：表格列名，顺序：标识列 → 业务数字 → 元信息
+       [ ] columns：按用户确认的字段顺序排列
        [ ] 命名用 camelCase，单位清晰（如 playCount 不是 play）
+       ✋ 向用户汇报：展示 args / columns / pipeline 草稿，等待最终确认后再写文件
 
 [ ] 6. 组装 pipeline
        [ ] 按 Pattern 选对应模板（references/patterns.md）
