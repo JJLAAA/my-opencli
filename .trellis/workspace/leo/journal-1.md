@@ -90,3 +90,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: CLI help & command discovery
+
+**Date**: 2026-04-28
+**Task**: CLI help & command discovery
+**Branch**: `main`
+
+### Summary
+
+Extracted CLI logic into src modules (cli.js, adapters.js, help.js), implemented global/site/command help, added README, npm packaging scripts
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `40b7c2e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
