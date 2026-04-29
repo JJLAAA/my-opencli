@@ -33,3 +33,6 @@ No automated test suite is committed yet. For now, validate changes by running t
 ## Commit & Pull Request Guidelines
 
 Match the existing commit style: scoped Conventional Commit prefixes such as `feat:`, `chore:`, `docs(spec):`, and `chore(task):`. Keep each commit focused on one change. PRs should include a short summary, manual verification steps, and terminal output or screenshots when CLI behavior changes. If you modify workflow or specs under `.trellis/`, mention that explicitly in the PR description.
+
+## response style
+remember,always answer my question in chinese

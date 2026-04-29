@@ -1,0 +1,57 @@
+{
+  "id": "extend-select-path-syntax",
+  "name": "extend-select-path-syntax",
+  "title": "extend select path syntax",
+  "description": "",
+  "status": "completed",
+  "dev_type": "backend",
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "leo",
+  "assignee": "leo",
+  "createdAt": "2026-04-29",
+  "completedAt": "2026-04-29",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 4,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/executor.js",
+    "README.md",
+    "README.zh.md"
+  ],
+  "notes": "Extended selectByPath with bracket index, quoted key, wildcard projection, nested wildcard flattening, and deterministic null for missing paths. Full JSONPath/JMESPath remains out of scope.",
+  "meta": {}
+}

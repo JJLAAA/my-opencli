@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": "src/executor.js", "reason": "Selector implementation and pipeline select/map/intercept behavior"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "No dependency, ESM, simple CLI quality constraints"}
+{"file": "README.md", "reason": "English adapter reference for select syntax"}
+{"file": "README.zh.md", "reason": "Chinese adapter reference for select syntax"}

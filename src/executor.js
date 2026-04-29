@@ -5,15 +5,84 @@ function render(tmpl, ctx) {
   );
 }
 
-function selectByPath(data, path) {
-  if (!data || typeof data !== 'object') return data;
-  let current = data;
-  for (const part of String(path).split('.')) {
-    if (current && typeof current === 'object' && !Array.isArray(current)) current = current[part];
-    else if (Array.isArray(current) && /^\d+$/.test(part)) current = current[parseInt(part, 10)];
-    else return null;
+function parseSelector(path) {
+  const tokens = [];
+  const source = String(path);
+  let i = 0;
+
+  while (i < source.length) {
+    if (source[i] === '.') {
+      i++;
+      continue;
+    }
+
+    if (source[i] === '[') {
+      const end = source.indexOf(']', i);
+      if (end === -1) return null;
+      const value = source.slice(i + 1, end);
+      if (value === '*') tokens.push({ type: 'wildcard' });
+      else if (/^\d+$/.test(value)) tokens.push({ type: 'key', key: Number(value) });
+      else if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        tokens.push({ type: 'key', key: value.slice(1, -1) });
+      } else {
+        return null;
+      }
+      i = end + 1;
+      continue;
+    }
+
+    let end = i;
+    while (end < source.length && source[end] !== '.' && source[end] !== '[') end++;
+    const key = source.slice(i, end);
+    if (key) tokens.push({ type: 'key', key: /^\d+$/.test(key) ? Number(key) : key });
+    i = end;
   }
-  return current ?? data;
+
+  return tokens;
+}
+
+function readKey(value, key) {
+  if (value == null || typeof value !== 'object') return null;
+  if (Array.isArray(value) && typeof key !== 'number') return null;
+  return value[key] ?? null;
+}
+
+function project(values, token) {
+  const next = [];
+
+  for (const value of values) {
+    if (token.type === 'wildcard') {
+      if (Array.isArray(value)) next.push(...value);
+      continue;
+    }
+
+    next.push(readKey(value, token.key));
+  }
+
+  return next;
+}
+
+function selectByPath(data, path) {
+  const tokens = parseSelector(path);
+  if (!tokens) return null;
+  const hasWildcard = tokens.some(token => token.type === 'wildcard');
+
+  let values = [data];
+  for (const token of tokens) {
+    const input = values;
+    values = project(values, token);
+    if (!hasWildcard) values = values.filter(value => value !== null);
+    if (!values.length) {
+      if (hasWildcard && token.type === 'wildcard' && input.some(Array.isArray)) return [];
+      return null;
+    }
+  }
+
+  if (hasWildcard) return values;
+  return values.length === 1 ? values[0] : values;
 }
 
 export async function executePipeline(pipeline, args, session) {

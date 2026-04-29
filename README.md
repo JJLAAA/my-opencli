@@ -171,7 +171,7 @@ Replaces `data` with the return value. Runs with full page context (cookies, ses
   capture: 'api/timeline',       // URL substring to match
   trigger: 'navigate:https://example.com/feed',  // what action causes the request
   timeout: 8,                    // seconds to wait (default: 8)
-  select: 'data.items',         // dot-path to sub-select from captured response
+  select: 'data.items',         // selector path to sub-select from captured response
 }}
 ```
 
@@ -186,12 +186,27 @@ Patches `window.fetch` and `XMLHttpRequest` in the page to intercept matching re
 | `click:` | `click:.load-more-btn` |
 | `scroll` | `scroll` or `scroll:down` / `scroll:up` |
 
-#### `select` — Extract nested value by dot-path
+#### `select` — Extract nested values
 
 ```js
 { select: 'data.list' }
 { select: 'result.0.items' }
+{ select: 'data.items[0].title' }
+{ select: 'data["hot-list"][*].title' }
+{ select: 'groups[*].items[*]' }
 ```
+
+Supported selector syntax:
+
+| Syntax | Description |
+|--------|-------------|
+| `data.items.0.title` | Legacy dot path with numeric array segments |
+| `data.items[0].title` | Bracket array index |
+| `data["hot-list"]` | Quoted key for names with punctuation or dots |
+| `data.items[*].title` | Project one field from every array item |
+| `groups[*].items[*]` | Flatten nested arrays by one level per wildcard |
+
+Missing paths return `null`.
 
 #### `map` — Transform array items
 

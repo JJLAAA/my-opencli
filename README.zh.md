@@ -173,7 +173,7 @@ export default {
   capture: 'api/timeline',       // 匹配的 URL 子串
   trigger: 'navigate:https://example.com/feed',  // 触发请求的动作
   timeout: 8,                    // 等待秒数（默认 8）
-  select: 'data.items',         // 从捕获响应中提取的路径
+  select: 'data.items',         // 从捕获响应中提取的 selector 路径
 }}
 ```
 
@@ -188,12 +188,27 @@ export default {
 | `click:` | `click:.load-more-btn` |
 | `scroll` | `scroll` 或 `scroll:down` / `scroll:up` |
 
-#### `select` — 按点路径提取嵌套值
+#### `select` — 提取嵌套值
 
 ```js
 { select: 'data.list' }
 { select: 'result.0.items' }
+{ select: 'data.items[0].title' }
+{ select: 'data["hot-list"][*].title' }
+{ select: 'groups[*].items[*]' }
 ```
+
+支持的 selector 语法：
+
+| 语法 | 说明 |
+|------|------|
+| `data.items.0.title` | 兼容旧点路径，数字片段表示数组下标 |
+| `data.items[0].title` | bracket 数组下标 |
+| `data["hot-list"]` | quoted key，适合带标点或点号的字段名 |
+| `data.items[*].title` | 从数组每个元素中投影同一个字段 |
+| `groups[*].items[*]` | 每个 wildcard 展开一层嵌套数组 |
+
+路径不存在时返回 `null`。
 
 #### `map` — 转换数组元素
 
