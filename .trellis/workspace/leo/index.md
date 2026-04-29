@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 4
-- **Last Active**: 2026-04-28
+- **Total Sessions**: 5
+- **Last Active**: 2026-04-29
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~172 | Active |
+| `journal-1.md` | ~226 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 5 | 2026-04-29 | Default TAP output to JSON | `85c69b6` | `main` |
 | 4 | 2026-04-28 | Close CLI help discovery task | `7f60f72` | `main` |
 | 3 | 2026-04-28 | CLI help & command discovery | `40b7c2e` | `main` |
 | 2 | 2026-04-25 | Add intercept and transform pipeline steps | `edd2692`, `79847db` | `main` |

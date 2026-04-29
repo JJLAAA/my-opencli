@@ -170,3 +170,57 @@ Extracted CLI logic into src modules (cli.js, adapters.js, help.js), implemented
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: Default TAP output to JSON
+
+**Date**: 2026-04-29
+**Task**: Default TAP output to JSON
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Description |
+|------|-------------|
+| CLI behavior | Changed omitted `--format` from table to JSON so command output is agent-friendly by default |
+| Help text | Updated global, site, and command help to show `--format json|table` and explain JSON default behavior |
+| Documentation | Updated English and Chinese README examples and output format tables to document JSON as default and table as opt-in |
+| Task tracking | Added and archived `04-28-agent-friendly-json-default` with PRD, acceptance criteria, context files, and validation notes |
+
+**Verification**:
+- `bun run build`
+- `python3 ./.trellis/scripts/task.py validate .trellis/tasks/04-28-agent-friendly-json-default`
+- `TAP_ADAPTERS_DIR=/tmp/tap-agent-output bun run bin/cli.js demo items`
+- `TAP_ADAPTERS_DIR=/tmp/tap-agent-output bun run bin/cli.js demo items --format table`
+- `TAP_ADAPTERS_DIR=/tmp/tap-agent-output bun run bin/cli.js --help`
+- Unknown command path returned exit code `1`
+
+**Updated Files**:
+- `src/cli.js`
+- `src/help.js`
+- `README.md`
+- `README.zh.md`
+- `.trellis/tasks/archive/2026-04/04-28-agent-friendly-json-default/`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `85c69b6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
