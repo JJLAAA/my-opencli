@@ -88,20 +88,20 @@ tap linuxdo news --limit 5
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `TAP_CDP_ENDPOINT` | `http://localhost:9222` | 浏览器适配器使用的 Chrome DevTools Protocol 端点 |
-| `TAP_ADAPTERS_DIR` | _（无）_ | 额外的适配器搜索目录（优先于内置和 `~/.tap/adapters`） |
+| `TAP_ADAPTERS_DIR` | _（无）_ | 额外的适配器搜索目录（优先于用户和内置适配器） |
 
 ### 适配器搜索顺序
 
 设置 `TAP_ADAPTERS_DIR` 时：
 
 1. `$TAP_ADAPTERS_DIR/<site>/<command>.js`
-2. `<repo>/adapters/<site>/<command>.js`（内置）
-3. `~/.tap/adapters/<site>/<command>.js`
+2. `~/.tap/adapters/<site>/<command>.js`
+3. `<repo>/adapters/<site>/<command>.js`（内置）
 
 未设置 `TAP_ADAPTERS_DIR` 时：
 
-1. `<repo>/adapters/<site>/<command>.js`（内置）
-2. `~/.tap/adapters/<site>/<command>.js`
+1. `~/.tap/adapters/<site>/<command>.js`
+2. `<repo>/adapters/<site>/<command>.js`（内置）
 
 第一个匹配的文件优先生效。
 
@@ -447,7 +447,7 @@ tap/
     └── linuxdo/news.js
 ```
 
-用户适配器存放于 `~/.tap/adapters/`，在未设置 `TAP_ADAPTERS_DIR` 时优先级高于内置适配器。
+用户适配器存放于 `~/.tap/adapters/`，优先级高于内置适配器。
 
 ---
 

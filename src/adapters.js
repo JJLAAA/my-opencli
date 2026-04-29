@@ -20,9 +20,10 @@ function compareNames(a, b) {
 
 export function getAdapterDirectories() {
   const configured = process.env.TAP_ADAPTERS_DIR;
+  const userAdaptersDir = join(homedir(), '.tap', 'adapters');
   const candidates = configured
-    ? [configured, BUILTIN_ADAPTERS_DIR, join(homedir(), '.tap', 'adapters')]
-    : [BUILTIN_ADAPTERS_DIR, join(homedir(), '.tap', 'adapters')];
+    ? [configured, userAdaptersDir, BUILTIN_ADAPTERS_DIR]
+    : [userAdaptersDir, BUILTIN_ADAPTERS_DIR];
 
   return unique(candidates).filter(isDirectory);
 }

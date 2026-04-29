@@ -86,20 +86,20 @@ tap linuxdo news --limit 5
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `TAP_CDP_ENDPOINT` | `http://localhost:9222` | Chrome DevTools Protocol endpoint for browser-based adapters |
-| `TAP_ADAPTERS_DIR` | _(none)_ | Additional directory to search for adapters (takes priority over built-ins and `~/.tap/adapters`) |
+| `TAP_ADAPTERS_DIR` | _(none)_ | Additional directory to search for adapters (takes priority over user and built-in adapters) |
 
 ### Adapter Search Order
 
 When `TAP_ADAPTERS_DIR` is set:
 
 1. `$TAP_ADAPTERS_DIR/<site>/<command>.js`
-2. `<repo>/adapters/<site>/<command>.js` (built-ins)
-3. `~/.tap/adapters/<site>/<command>.js`
+2. `~/.tap/adapters/<site>/<command>.js`
+3. `<repo>/adapters/<site>/<command>.js` (built-ins)
 
 Without `TAP_ADAPTERS_DIR`:
 
-1. `<repo>/adapters/<site>/<command>.js` (built-ins)
-2. `~/.tap/adapters/<site>/<command>.js`
+1. `~/.tap/adapters/<site>/<command>.js`
+2. `<repo>/adapters/<site>/<command>.js` (built-ins)
 
 The first match wins.
 
@@ -472,7 +472,7 @@ tap/
     └── linuxdo/news.js
 ```
 
-User adapters live in `~/.tap/adapters/` and take precedence over built-ins when `TAP_ADAPTERS_DIR` is not set.
+User adapters live in `~/.tap/adapters/` and take precedence over built-ins.
 
 ---
 
