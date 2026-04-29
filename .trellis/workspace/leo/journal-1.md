@@ -257,3 +257,40 @@ Extended TAP selector paths with bracket indexes, quoted keys, wildcard projecti
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: Prioritize user adapters
+
+**Date**: 2026-04-29
+**Task**: Prioritize user adapters
+**Branch**: `main`
+
+### Summary
+
+Changed adapter resolution so user-installed adapters override built-in adapters by default, while `TAP_ADAPTERS_DIR` remains the highest-priority override path.
+
+### Main Changes
+
+- Updated `src/adapters.js` search order to `$TAP_ADAPTERS_DIR`, then `~/.tap/adapters`, then built-in `adapters`.
+- Synchronized `README.md` and `README.zh.md` with the new adapter search order.
+- Added an executable adapter resolution contract to `.trellis/spec/frontend/directory-structure.md`, including priority rules, validation cases, and required test points.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d9eee02` | (see git log) |
+
+### Testing
+
+- [OK] `bun run build`
+- [OK] Manual `resolveAdapterPath()` checks for user-over-built-in priority, `TAP_ADAPTERS_DIR` priority, and missing-command `null`
+- [OK] `git diff --check`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
