@@ -224,3 +224,36 @@ Extracted CLI logic into src modules (cli.js, adapters.js, help.js), implemented
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: Extend select path syntax
+
+**Date**: 2026-04-29
+**Task**: Extend select path syntax
+**Branch**: `main`
+
+### Summary
+
+Extended TAP selector paths with bracket indexes, quoted keys, wildcard projection, nested wildcard flattening, deterministic null for missing paths, and README documentation updates.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9795d42` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
