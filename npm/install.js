@@ -25,9 +25,3 @@ function copyDir(src, dest) {
 const builtinSrc = path.join(__dirname, 'adapters');
 const adaptersDest = path.join(os.homedir(), '.tap', 'adapters');
 if (fs.existsSync(builtinSrc)) copyDir(builtinSrc, adaptersDest);
-
-// copy skill to ~/.claude/skills/
-const skillSrc = path.join(__dirname, 'skills', 'tap-adapter-author');
-const skillDest = path.join(os.homedir(), '.claude', 'skills', 'tap-adapter-author');
-if (fs.existsSync(skillSrc)) copyDir(skillSrc, skillDest);
-

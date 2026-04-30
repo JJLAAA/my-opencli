@@ -56,6 +56,8 @@ npm/
 ├── package.json          # package metadata
 ├── run.js                # platform selector (bin entry)
 ├── install.js            # postinstall: sets executable permissions
+├── skills/
+│   └── tap-adapter-author/
 └── binaries/
     ├── tap-darwin-arm64  # macOS Apple Silicon
     ├── tap-darwin-x64    # macOS Intel
@@ -81,6 +83,13 @@ After installation, `tap` is available directly:
 ```bash
 tap --help
 tap bilibili hot
+```
+
+AI assistant skills are bundled but not installed automatically. Install them explicitly:
+
+```bash
+tap skill install claude-code
+tap skill install codex
 ```
 
 ## Updating

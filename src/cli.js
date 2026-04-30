@@ -3,6 +3,7 @@ import { listAdapters, loadAdapter } from './adapters.js';
 import { executePipeline } from './executor.js';
 import { commandHelp, globalHelp, siteHelp } from './help.js';
 import { printOutput } from './output.js';
+import { installSkill, skillHelp } from './skills.js';
 
 function fail(message) {
   console.error(message);
@@ -26,6 +27,24 @@ function parseArgs(rest) {
   return args;
 }
 
+function parseSkillInstallArgs(rest) {
+  const [provider, ...flags] = rest;
+  const options = {};
+
+  for (let i = 0; i < flags.length; i++) {
+    if (flags[i] === '--force') {
+      options.force = true;
+    } else if (flags[i] === '--target') {
+      if (!flags[i + 1] || flags[i + 1].startsWith('--')) fail('Missing value for --target');
+      options.target = flags[++i];
+    } else {
+      fail(`Unknown option: ${flags[i]}\n\n${skillHelp('install')}`);
+    }
+  }
+
+  return { provider, options };
+}
+
 function printHelp(text) {
   console.log(text);
   process.exit(0);
@@ -41,8 +60,31 @@ async function printCommandHelp(site, command, siteEntry) {
   printHelp(commandHelp(site, command, loaded.adapter));
 }
 
+function runSkillCommand(tokens) {
+  const [command, ...rest] = tokens;
+  if (!command || isHelpToken(command)) printHelp(skillHelp());
+  if (command !== 'install') fail(`Unknown skill command: ${command}\n\n${skillHelp()}`);
+  if (rest.some(isHelpToken)) printHelp(skillHelp('install'));
+
+  const { provider, options } = parseSkillInstallArgs(rest);
+  if (!provider) printHelp(skillHelp('install'));
+
+  let result;
+  try {
+    result = installSkill(provider, options);
+  } catch (error) {
+    fail(error.message);
+  }
+
+  console.log(`Installed ${result.skill} for ${result.provider}: ${result.target}`);
+  process.exit(0);
+}
+
 export async function runCli(argv = process.argv.slice(2)) {
   const tokens = argv;
+  if (tokens[0] === 'skill') runSkillCommand(tokens.slice(1));
+  if (tokens[0] === 'help' && tokens[1] === 'skill') printHelp(skillHelp(tokens[2]));
+
   const adapters = listAdapters();
 
   if (!tokens.length || isHelpToken(tokens[0])) {

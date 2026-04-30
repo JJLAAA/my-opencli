@@ -19,6 +19,7 @@ tap/
 ├── src/
 │   ├── cdp.js          # Chrome DevTools Protocol session management
 │   ├── executor.js     # Pipeline execution engine
+│   ├── skills.js       # Explicit AI assistant skill installation
 │   └── output.js       # Output formatter (table / json)
 ├── adapters/           # Built-in adapters (installed to ~/.tap/adapters/ for use)
 │   ├── bilibili/
@@ -37,9 +38,28 @@ Each core module is a single file with a clear, single responsibility:
 - `bin/cli.js` — orchestration only, no business logic
 - `src/cdp.js` — exports `openSession()` and `closeTab()`, contains `CDPSession` class
 - `src/executor.js` — exports `executePipeline(pipeline, args, session)`
+- `src/skills.js` — exports `installSkill(providerName, options)` and `skillHelp(command)` for explicit skill installation
 - `src/output.js` — exports `printOutput(data, format, columns)`
 
 New core capabilities go in `src/` as their own file. Do not add logic to `bin/cli.js`.
+
+### CLI Side Commands
+
+Side commands that are not adapter executions must be routed before adapter discovery in `src/cli.js`, then delegate behavior to a focused `src/` module.
+
+Current side command:
+
+```bash
+tap skill install <claude-code|codex> [--target dir] [--force]
+```
+
+Contract:
+
+- `claude-code` defaults to `~/.claude/skills/tap-adapter-author`
+- `codex` defaults to `$CODEX_HOME/skills/tap-adapter-author`, or `~/.codex/skills/tap-adapter-author` when `CODEX_HOME` is unset
+- `--target <dir>` means the parent skills directory; the command appends `tap-adapter-author`
+- Existing target directories are not overwritten unless `--force` is passed
+- npm packages may bundle `skills/tap-adapter-author/`, but `postinstall` must not write to assistant-specific directories
 
 ---
 

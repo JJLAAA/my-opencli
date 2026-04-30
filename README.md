@@ -361,15 +361,22 @@ TAP auto-detects whether an adapter needs the browser by scanning its pipeline s
 
 ## Building Adapters with AI
 
-TAP ships with a Claude Code skill (`tap-adapter-author`) that guides you through the full adapter authoring loop — from site reconnaissance to a working `tap <site> <command>` output.
+TAP ships with an AI assistant skill (`tap-adapter-author`) that guides you through the full adapter authoring loop — from site reconnaissance to a working `tap <site> <command>` output.
 
 ### Setup
 
-Install [Claude Code](https://claude.ai/code), then in this repo:
+Install the skill explicitly for the assistant you use:
 
 ```bash
-# The skill is at: .claude/skills/tap-adapter-author/
-# It's automatically available in Claude Code sessions
+tap skill install claude-code
+tap skill install codex
+```
+
+Use `--target <dir>` for a custom skills directory, or `--force` to overwrite files in an existing `tap-adapter-author` skill directory:
+
+```bash
+tap skill install codex --target ~/.codex/skills
+tap skill install claude-code --force
 ```
 
 The skill depends on the **chrome-devtools MCP** for automated reconnaissance (network monitoring and DOM inspection). Two manual steps are required before using it:

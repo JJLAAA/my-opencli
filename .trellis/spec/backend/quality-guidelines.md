@@ -27,6 +27,7 @@ TAP is a small, focused CLI tool. The quality bar is: readable, minimal, correct
 - **No external dependencies beyond `ws`** — the only allowed npm dependency is `ws` for WebSocket
 - **No TypeScript** — plain `.js` files only
 - **No test framework** — manual testing against live Chrome; no unit test suite currently
+- **No assistant-specific postinstall writes** — npm `postinstall` may prepare TAP runtime files, but must not write to `~/.claude`, `~/.codex`, or other AI assistant directories
 
 ---
 
@@ -43,6 +44,7 @@ Produces `tap` — a standalone Bun single-file executable. The binary is commit
 ## Code Review Checklist
 
 - [ ] No new npm dependencies introduced
+- [ ] Assistant skills are installed only through explicit commands such as `tap skill install claude-code`
 - [ ] Adapter follows the `{ args, columns, pipeline }` shape
 - [ ] Pipeline steps use only supported ops: `fetch`, `navigate`, `evaluate`, `intercept`, `select`, `filter`, `map`, `sort`, `limit`
 - [ ] Template expressions use `${{ expr }}` syntax

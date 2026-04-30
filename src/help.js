@@ -27,6 +27,7 @@ export function globalHelp() {
     '',
     sectionTitle('Commands'),
     '  help              Show global, site, or command help',
+    '  skill             Install bundled AI assistant skills',
   ];
 
   if (adapters.length) {

@@ -360,11 +360,23 @@ TAP 会自动扫描 pipeline 步骤判断是否需要浏览器，每次运行新
 
 ## 用 AI 辅助构建适配器
 
-TAP 附带一个 Claude Code skill（`tap-adapter-author`），引导你完成从站点侦察到 `tap <site> <command>` 输出正确数据的完整闭环。
+TAP 附带一个 AI assistant skill（`tap-adapter-author`），引导你完成从站点侦察到 `tap <site> <command>` 输出正确数据的完整闭环。
 
 ### 前置准备
 
-安装 [Claude Code](https://claude.ai/code)，在本项目目录中即可使用该 skill。
+按你使用的 assistant 显式安装 skill：
+
+```bash
+tap skill install claude-code
+tap skill install codex
+```
+
+如果需要自定义 skills 目录，使用 `--target <dir>`；如果目标 skill 已存在并需要覆盖文件，使用 `--force`：
+
+```bash
+tap skill install codex --target ~/.codex/skills
+tap skill install claude-code --force
+```
 
 ### 工作流
 
