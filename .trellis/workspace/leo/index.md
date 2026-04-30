@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 7
-- **Last Active**: 2026-04-29
+- **Total Sessions**: 8
+- **Last Active**: 2026-04-30
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~292 | Active |
+| `journal-1.md` | ~329 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 8 | 2026-04-30 | Explicit skill installation | `08345b5` | `main` |
 | 7 | 2026-04-29 | Prioritize user adapters | `d9eee02` | `main` |
 | 6 | 2026-04-29 | Extend select path syntax | `9795d42` | `main` |
 | 5 | 2026-04-29 | Default TAP output to JSON | `85c69b6` | `main` |

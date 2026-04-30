@@ -294,3 +294,46 @@ Changed adapter resolution so user-installed adapters override built-in adapters
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: Explicit skill installation
+
+**Date**: 2026-04-30
+**Task**: Explicit skill installation
+**Branch**: `main`
+
+### Summary
+
+Made tap-adapter-author skill installation explicit via tap skill install for claude-code and codex, removed automatic assistant-directory writes from npm postinstall, updated publishing/user docs, and captured the new CLI contract in backend specs.
+
+### Main Changes
+
+- Added `src/skills.js` with explicit `tap skill install <claude-code|codex> [--target dir] [--force]` support.
+- Routed `tap skill` and `tap help skill install` before adapter execution in `src/cli.js`.
+- Removed automatic `~/.claude/skills/` writes from `npm/install.js`; npm packages still bundle `skills/tap-adapter-author/`.
+- Updated `README.md`, `README.zh.md`, and `docs/publishing.md` with explicit installation instructions.
+- Updated backend specs with the side-command contract and the no assistant-specific postinstall rule.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `08345b5` | (see git log) |
+
+### Testing
+
+- [OK] `bun run build`
+- [OK] `bun run build:npm`
+- [OK] `bun run bin/cli.js skill install --help`
+- [OK] `bun run bin/cli.js skill install codex --target /tmp/tap-finish-skill --force`
+- [OK] `npm/binaries/tap-darwin-arm64 skill install codex --target /tmp/tap-finish-npm-skill --force`
+- [OK] Invalid target and missing `--target` value return clean CLI errors
+- [OK] `git diff --check`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
