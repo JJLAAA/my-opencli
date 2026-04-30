@@ -346,12 +346,6 @@ pipeline: [
 # macOS
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
   --remote-debugging-port=9222 --no-first-run --no-default-browser-check --headless --user-data-dir=~/.chrome-automation-profile
-
-# Linux
-google-chrome --remote-debugging-port=9222
-
-# 无头模式
-google-chrome --headless --remote-debugging-port=9222
 ```
 
 TAP 会自动扫描 pipeline 步骤判断是否需要浏览器，每次运行新建一个标签页，结束后自动关闭。

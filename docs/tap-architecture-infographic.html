@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TAP 架构信息图</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #5f6b7a;
+      --line: #d8dee8;
+      --panel: #ffffff;
+      --soft: #f7f9fc;
+      --blue: #2563eb;
+      --blue-bg: #eff6ff;
+      --blue-bg-2: #dbeafe;
+      --blue-line: #93c5fd;
+      --green: #168247;
+      --green-bg: #f0fdf4;
+      --green-bg-2: #dcfce7;
+      --green-line: #86efac;
+      --orange: #c76212;
+      --orange-bg: #fff7ed;
+      --orange-bg-2: #ffedd5;
+      --orange-line: #fdba74;
+      --violet: #5b36c9;
+      --violet-bg: #f5f3ff;
+      --violet-line: #c4b5fd;
+      --teal: #0f766e;
+      --teal-bg: #ecfdf5;
+      --teal-line: #99f6e4;
+      --red: #dc2626;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #eef3f8;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .diagram-wrapper {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 30px 22px 40px;
+    }
+
+    header {
+      margin: 0 0 22px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.16;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      max-width: 860px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .phase {
+      position: relative;
+      margin-top: 24px;
+      border-radius: 16px;
+      border: 1.5px solid var(--phase-line);
+      background: linear-gradient(135deg, var(--phase-bg), var(--phase-bg-2));
+      padding: 22px 18px 16px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    .phase.agent {
+      --phase: var(--blue);
+      --phase-bg: var(--blue-bg);
+      --phase-bg-2: var(--blue-bg-2);
+      --phase-line: var(--blue-line);
+    }
+
+    .phase.adapter {
+      --phase: var(--violet);
+      --phase-bg: var(--violet-bg);
+      --phase-bg-2: #ede9fe;
+      --phase-line: var(--violet-line);
+    }
+
+    .phase.runtime {
+      --phase: var(--green);
+      --phase-bg: var(--green-bg);
+      --phase-bg-2: var(--green-bg-2);
+      --phase-line: var(--green-line);
+    }
+
+    .phase.browser {
+      --phase: var(--orange);
+      --phase-bg: var(--orange-bg);
+      --phase-bg-2: var(--orange-bg-2);
+      --phase-line: var(--orange-line);
+    }
+
+    .phase.outcome {
+      --phase: var(--teal);
+      --phase-bg: #f0fdfa;
+      --phase-bg-2: var(--teal-bg);
+      --phase-line: var(--teal-line);
+    }
+
+    .badge {
+      position: absolute;
+      top: -13px;
+      left: 20px;
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      border-radius: 20px;
+      background: var(--phase);
+      color: #fff;
+      padding: 3px 14px;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .phase-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 14px;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 800;
+    }
+
+    .icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: var(--phase);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card {
+      background: var(--panel);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 5px rgba(15, 23, 42, 0.08);
+    }
+
+    .card h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .mini-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      background: var(--phase);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+
+    .row {
+      margin: 0 0 7px;
+      border-left: 3px solid #3b82f6;
+      border-radius: 5px;
+      background: var(--soft);
+      padding: 8px 10px;
+      color: #334155;
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+
+    .row:last-child {
+      margin-bottom: 0;
+    }
+
+    .row.ok {
+      border-left-color: #10b981;
+    }
+
+    .row.warn {
+      border-left-color: #f59e0b;
+    }
+
+    .row.hot {
+      border-left-color: #f97316;
+    }
+
+    .row.err {
+      border-left-color: #ef4444;
+    }
+
+    .meta {
+      display: inline-block;
+      margin-left: 6px;
+      border-radius: 10px;
+      background: #e0f2fe;
+      color: #075985;
+      padding: 2px 8px;
+      font-size: 10.5px;
+      line-height: 1.3;
+      font-weight: 700;
+      vertical-align: 1px;
+    }
+
+    .meta.green {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .meta.violet {
+      background: #ede9fe;
+      color: #4c1d95;
+    }
+
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      min-width: 112px;
+      flex: 1 1 112px;
+      border: 1.5px solid currentColor;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--phase);
+      padding: 9px 10px;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 750;
+    }
+
+    .arrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-weight: 800;
+      padding: 0 1px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .subpanel {
+      border: 1.5px solid var(--sub-line);
+      border-radius: 10px;
+      background: var(--sub-bg);
+      padding: 12px;
+    }
+
+    .subpanel h4 {
+      margin: 0 0 9px;
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .dashed {
+      border: 1.5px dashed #94a3b8;
+      background: #f8fafc;
+    }
+
+    .connector {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 54px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .note {
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 1px 5px rgba(15, 23, 42, 0.08);
+      min-height: 148px;
+    }
+
+    .num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--note);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .note h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .note p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    code {
+      font-family: "SF Mono", "Cascadia Code", Menlo, monospace;
+      font-size: 11px;
+    }
+
+    .codebox {
+      margin-top: 9px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #f8fafc;
+      padding: 9px 10px;
+      color: #334155;
+      font-family: "SF Mono", "Cascadia Code", Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    strong {
+      color: #0f172a;
+    }
+
+    @media (max-width: 860px) {
+      .grid,
+      .grid.two,
+      .split,
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .diagram-wrapper {
+        padding: 24px 14px 30px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .phase {
+        padding: 22px 12px 14px;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .arrow {
+        transform: rotate(90deg);
+        min-height: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="diagram-wrapper">
+    <header>
+      <h1>TAP：把已有 HTTP 服务代理成 Agent 友好的 CLI</h1>
+      <p class="subtitle">
+        Agent 只表达一次意图，Skill 把探索结果沉淀为适配器；后续任务统一通过 TAP 加载固化 pipeline 执行，
+        在 HTTP、CDP 和用户浏览器登录态之间形成可复用、可审计、确定性更高的工具路径。
+      </p>
+    </header>
+
+    <section class="phase agent">
+      <span class="badge">意图层：Agent 使用路径</span>
+      <h2 class="phase-title"><span class="icon">I</span>从自然语言意图到可执行工具</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><span class="mini-icon">A</span>Agent 表达意图</h3>
+          <p class="row hot">需要获取信息、查询配置、读取站点状态或调用已有 HTTP 服务。</p>
+          <p class="row">目标是描述“要什么”，不在每次任务中重写网页探索和请求细节。</p>
+        </div>
+        <div class="card">
+          <h3><span class="mini-icon">S</span>Skill 创建适配器</h3>
+          <p class="row ok">侦察站点接口、页面行为、登录要求和返回结构。</p>
+          <p class="row">把稳定路径写成 <code>adapters/&lt;site&gt;/&lt;command&gt;.js</code>。</p>
+        </div>
+        <div class="card">
+          <h3><span class="mini-icon">C</span>CLI 入口固化</h3>
+          <p class="row ok"><code>tap &lt;site&gt; &lt;command&gt; --key value</code> 成为后续调用界面。</p>
+          <p class="row warn">Agent 之后只需传参数并解析结构化输出。</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="connector">
+      <svg width="240" height="54" viewBox="0 0 240 54" overflow="visible" aria-hidden="true">
+        <defs>
+          <marker id="arrow-intent" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#2563eb"></path>
+          </marker>
+        </defs>
+        <path d="M120,0 C120,26 120,26 120,52" stroke="#2563eb" stroke-width="2" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-intent)"></path>
+        <text x="130" y="30" font-size="11" fill="#2563eb" font-family="-apple-system,sans-serif">意图沉淀为 adapter</text>
+      </svg>
+    </div>
+
+    <section class="phase adapter">
+      <span class="badge">沉淀层：适配器注册与复用</span>
+      <h2 class="phase-title"><span class="icon">P</span>Adapter 是意图和执行之间的稳定契约</h2>
+      <div class="grid two">
+        <div class="card dashed">
+          <h3><span class="mini-icon">R</span>适配器声明 <span class="meta green">推荐复用模式</span></h3>
+          <div class="flow">
+            <div class="step">description</div>
+            <span class="arrow">→</span>
+            <div class="step">args</div>
+            <span class="arrow">→</span>
+            <div class="step">pipeline</div>
+            <span class="arrow">→</span>
+            <div class="step">columns</div>
+          </div>
+          <p class="row">pipeline 用 <code>fetch</code>、<code>navigate</code>、<code>intercept</code>、<code>select</code>、<code>map</code>、<code>limit</code> 等步骤描述执行。</p>
+        </div>
+        <div class="card">
+          <h3><span class="mini-icon">L</span>加载优先级</h3>
+          <p class="row ok"><code>TAP_ADAPTERS_DIR</code> 自定义目录优先，用于项目私有命令。</p>
+          <p class="row ok"><code>~/.tap/adapters</code> 用户适配器覆盖内置适配器。</p>
+          <p class="row"><code>adapters/</code> 内置示例提供默认能力。</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="connector">
+      <svg width="240" height="54" viewBox="0 0 240 54" overflow="visible" aria-hidden="true">
+        <defs>
+          <marker id="arrow-adapter" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#5b36c9"></path>
+          </marker>
+        </defs>
+        <path d="M120,0 C120,26 120,26 120,52" stroke="#5b36c9" stroke-width="2" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-adapter)"></path>
+        <text x="130" y="30" font-size="11" fill="#5b36c9" font-family="-apple-system,sans-serif">统一进入 TAP runtime</text>
+      </svg>
+    </div>
+
+    <section class="phase runtime">
+      <span class="badge">执行层：确定性 pipeline runtime</span>
+      <h2 class="phase-title"><span class="icon">E</span>一次适配，多次确定性执行</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><span class="mini-icon">1</span>CLI 编排</h3>
+          <p class="row ok"><code>bin/cli.js</code> 解析站点、命令、参数和输出格式。</p>
+          <p class="row">加载命中的 adapter，并把参数交给执行器。</p>
+        </div>
+        <div class="card">
+          <h3><span class="mini-icon">2</span>顺序执行步骤</h3>
+          <p class="row ok"><code>executePipeline()</code> 让每一步接收上一轮 <code>data</code>。</p>
+          <p class="row">HTTP、选择、映射、过滤、排序、截断组合为稳定数据流。</p>
+        </div>
+        <div class="card">
+          <h3><span class="mini-icon">3</span>结构化输出</h3>
+          <p class="row ok">默认 JSON 面向 Agent 解析，table 面向人工查看。</p>
+          <p class="row warn">输出列由 adapter 的 <code>columns</code> 固定，减少后处理不确定性。</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="connector">
+      <svg width="240" height="54" viewBox="0 0 240 54" overflow="visible" aria-hidden="true">
+        <defs>
+          <marker id="arrow-runtime" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#168247"></path>
+          </marker>
+        </defs>
+        <path d="M120,0 C120,26 120,26 120,52" stroke="#168247" stroke-width="2" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-runtime)"></path>
+        <text x="130" y="30" font-size="11" fill="#168247" font-family="-apple-system,sans-serif">按步骤选择 HTTP 或浏览器能力</text>
+      </svg>
+    </div>
+
+    <section class="phase browser">
+      <span class="badge">机制层：HTTP + CDP + 登录态</span>
+      <h2 class="phase-title"><span class="icon">B</span>代理已有服务，同时保留用户浏览器上下文</h2>
+      <div class="split">
+        <div class="subpanel" style="--sub:#2563eb;--sub-bg:#eff6ff;--sub-line:#93c5fd;">
+          <h4>直接 HTTP 路径</h4>
+          <p class="row ok">公开接口或无需登录接口走 <code>fetch</code>。</p>
+          <p class="row">适合新闻列表、热榜、公开配置和轻量信息获取。</p>
+        </div>
+        <div class="subpanel" style="--sub:#c76212;--sub-bg:#fff7ed;--sub-line:#fdba74;">
+          <h4>CDP 浏览器路径</h4>
+          <p class="row ok"><code>TAP_CDP_ENDPOINT</code> 连接 Chrome remote debug。</p>
+          <p class="row ok">复用用户 Chrome 的 cookie、会话和登录态。</p>
+          <p class="row">通过 <code>navigate</code>、<code>evaluate</code>、<code>intercept</code> 抽取页面内数据。</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="connector">
+      <svg width="240" height="54" viewBox="0 0 240 54" overflow="visible" aria-hidden="true">
+        <defs>
+          <marker id="arrow-browser" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#c76212"></path>
+          </marker>
+        </defs>
+        <path d="M120,0 C120,26 120,26 120,52" stroke="#c76212" stroke-width="2" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-browser)"></path>
+        <text x="130" y="30" font-size="11" fill="#c76212" font-family="-apple-system,sans-serif">把执行结果返回给 Agent</text>
+      </svg>
+    </div>
+
+    <section class="phase outcome">
+      <span class="badge">收益层：Agent 友好的确定性工具</span>
+      <h2 class="phase-title"><span class="icon">O</span>意图与执行分离后的任务闭环</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><span class="mini-icon">D</span>确定性执行</h3>
+          <p class="row ok">执行路径由 adapter 固化，减少每次临场浏览网页和推断接口。</p>
+          <p class="row">同一命令、同一参数形成可重复的工具调用行为。</p>
+        </div>
+        <div class="card">
+          <h3><span class="mini-icon">T</span>降低 token 成本</h3>
+          <p class="row ok">复杂站点知识沉淀在 adapter，而不是每次塞进上下文。</p>
+          <p class="row">Agent 只消费命令、参数和结构化结果。</p>
+        </div>
+        <div class="card">
+          <h3><span class="mini-icon">Q</span>提升成功率</h3>
+          <p class="row ok">复用已经验证过的 pipeline，减少网页变化、登录态处理和选择器探索带来的失败。</p>
+          <p class="row warn">适合信息获取、配置查询、内部 HTTP 服务代理和运营状态读取。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="summary-grid" aria-label="关键机制摘要">
+      <div class="note" style="--note:#2563eb;">
+        <span class="num">1</span>
+        <h3>Agent 入口</h3>
+        <p>调用 CLI，而不是直接操作网页或散装 HTTP 请求。</p>
+        <div class="codebox">tap linuxdo news --limit 5 --format json</div>
+      </div>
+      <div class="note" style="--note:#5b36c9;">
+        <span class="num">2</span>
+        <h3>适配器契约</h3>
+        <p>把命令参数、pipeline 和输出列固定成可维护文件。</p>
+        <div class="codebox">export default {
+  args, pipeline, columns
+}</div>
+      </div>
+      <div class="note" style="--note:#c76212;">
+        <span class="num">3</span>
+        <h3>浏览器会话</h3>
+        <p>需要登录态时，通过 CDP 进入已有 Chrome 上下文。</p>
+        <div class="codebox">TAP_CDP_ENDPOINT=http://localhost:9222</div>
+      </div>
+      <div class="note" style="--note:#0f766e;">
+        <span class="num">4</span>
+        <h3>结果消费</h3>
+        <p>返回 JSON 或表格，便于 Agent 后续摘要、对比和决策。</p>
+        <div class="codebox">printOutput(data, format, columns)</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

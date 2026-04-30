@@ -8,55 +8,85 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Usage: `tap <site> <command> [--key value] [--format table|json]`
 
-## Build
+## Build & Run
 
 ```bash
-bun build --compile bin/cli.js --outfile tap
+bun run build                  # produces standalone `tap` binary
+bun run build:npm              # cross-compile for darwin-arm64, darwin-x64, linux-x64 → npm/binaries/
+bun run bin/cli.js <site> <command>  # run directly during development
 ```
 
-This produces a standalone `tap` binary via Bun's single-file executable feature.
+No test/lint/format scripts exist yet. Validate changes by running the affected command and checking both output formats:
+```bash
+bun run bin/cli.js bilibili hot --limit 5 --format table
+bun run bin/cli.js bilibili hot --limit 5 --format json
+```
 
 ## Architecture
 
 ### Entry Point
-`bin/cli.js` — parses CLI args, loads the user's adapter from `~/.tap/adapters/<site>/<command>.js`, and orchestrates pipeline execution.
+`bin/cli.js` — thin wrapper that imports and calls `src/cli.js#runCli()`.
 
 ### Core Modules
-- **`src/cdp.js`** — Chrome DevTools Protocol wrapper. `CDPSession` class + `openSession()`/`closeTab()` for browser lifecycle. Connects to Chrome via `TAP_CDP_ENDPOINT` (default: `http://localhost:9222`).
-- **`src/executor.js`** — Pipeline execution engine. `executePipeline()` runs declarative steps sequentially. Template values use `${{ expression }}` syntax with context vars `item`, `index`, `args`, `data`, `root`.
-- **`src/output.js`** — Output formatter. `printOutput()` renders data as JSON or ASCII table.
+- **`src/cli.js`** — Arg parsing, help routing, pipeline orchestration. Determines whether a browser session is needed by checking if any step uses `navigate`/`evaluate`/`intercept`.
+- **`src/executor.js`** — Pipeline execution engine. `executePipeline(steps, args, session)` runs steps sequentially, threading `data` through. Template expressions use `${{ expr }}` syntax with context vars: `item`, `index`, `args`, `data`, `root`.
+- **`src/cdp.js`** — Chrome DevTools Protocol wrapper. `CDPSession` class + `openSession()`/`closeTab()`. Manages WebSocket communication, page navigation, JS evaluation, and network interception (patches `fetch` and `XMLHttpRequest` in-page).
+- **`src/adapters.js`** — Adapter discovery and loading. `resolveAdapterPath()` searches directories in priority order (see below). `listAdapters()` scans all directories and deduplicates by site/command.
+- **`src/output.js`** — `printOutput()` renders data as JSON or ASCII table.
+- **`src/help.js`** — Generates help text at global, site, and command levels.
 
-### Adapter Pattern
-Adapters live in `adapters/<site>/<command>.js` and are installed to `~/.tap/adapters/` for use. Each adapter exports a default object:
+### Adapter Resolution (Search Order)
+1. `TAP_ADAPTERS_DIR` env var (if set)
+2. `~/.tap/adapters/` (user adapters)
+3. `adapters/` in repo root (built-in)
+
+User adapters override built-ins when both exist for the same site/command.
+
+### Adapter Shape
 ```js
+// adapters/<site>/<command>.js
 export default {
-  args: [{ name: 'limit', default: 20 }],  // CLI params with defaults
-  columns: ['field1', 'field2'],            // table column order
-  pipeline: [ /* ordered array of operation steps */ ],
+  description: 'Short description shown in help.',
+  args: [{ name: 'limit', default: 20, description: 'Max items.' }],
+  columns: ['field1', 'field2'],  // table column order
+  pipeline: [ /* ordered array of steps */ ],
 };
 ```
 
 ### Pipeline Steps
-Each step is an object with a single key naming the operation:
+Each step is `{ <op>: <params> }`. Steps execute sequentially, threading `data`:
 
-| Step | Description |
-|------|-------------|
-| `fetch` | HTTP GET, returns parsed JSON. Params: `{ url }` or a plain URL string. |
-| `navigate` | Open URL in browser and wait for page load. |
-| `evaluate` | Run JS in browser context (async-capable), replaces `data` with return value. |
-| `intercept` | Capture network requests matching a URL pattern. Params: `{ capture, trigger, timeout, select }`. `trigger` prefixes: `navigate:`, `evaluate:`, `click:`, `scroll`. |
-| `select` | Extract a nested value from `data` by dot-path (e.g. `"data.list"`). |
-| `map` | Transform array items into new objects using template expressions. Supports inline `select` key to sub-select before mapping. |
-| `filter` | Retain items where JS expression is truthy. Context: `item`, `index`, `args`, `data`. |
-| `sort` | Sort array by field. Params: `{ by, order }` — `order: 'desc'` for reverse. |
-| `limit` | Slice array to N items. Supports template expressions (e.g. `"${{ args.limit }}"`). |
+| Step | Params | Description |
+|------|--------|-------------|
+| `fetch` | URL string or `{ url }` | HTTP GET → parsed JSON. No browser needed. |
+| `navigate` | URL string | Open URL in browser, wait for load + 800ms SPA settle. |
+| `evaluate` | JS string | Run JS in browser context (async-capable). Replaces `data` with return value. |
+| `intercept` | `{ capture, trigger, timeout, select }` | Patch fetch/XHR to capture matching network requests. `trigger` prefixes: `navigate:`, `evaluate:`, `click:`, `scroll`. |
+| `select` | Dot-path string | Extract nested value. Supports `[*]` wildcard for array flattening, `["key"]` for bracket notation. |
+| `map` | `{ [key]: "${{ expr }}" }` | Transform array items. Optional `select` key sub-selects before mapping. Context: `item`, `index`, `args`, `data`, `root`. |
+| `filter` | JS expression string | Retain items where expression is truthy. Context: `item`, `index`, `args`, `data`. |
+| `sort` | `{ by, order }` or field string | Sort by field. `order: 'desc'` for reverse. Uses natural sort. |
+| `limit` | Number or `"${{ args.limit }}"` | Slice array to N items. |
 
 ### Execution Flow
 ```
-CLI Args → Load Adapter (~/.tap/adapters/<site>/<command>.js)
-         → executePipeline(steps, args, cdpSession)
+CLI Args → listAdapters() → loadAdapter(site, cmd)
+         → needsBrowser check (navigate|evaluate|intercept in pipeline)
+         → if browser: openSession() → new CDP tab
+         → executePipeline(steps, args, session)
          → printOutput(data, format, columns)
+         → closeTab()
 ```
+
+## Environment Variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `TAP_CDP_ENDPOINT` | `http://localhost:9222` | Chrome DevTools Protocol endpoint |
+| `TAP_ADAPTERS_DIR` | (none) | Additional adapter directory (searched first) |
 
 ## Key Dependency
 - **ws** (`^8.0.0`): WebSocket client for CDP communication with Chrome.
+
+## Commit Style
+Scoped Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `chore(task):`.
