@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 
 const SKILL_NAME = 'tap-adapter-author';
+const PACKAGE_ROOT_ENV = 'TAP_PACKAGE_ROOT';
 const ROOT_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const PROVIDERS = {
@@ -42,11 +43,17 @@ function copyDir(src, dest, { overwrite }) {
   }
 }
 
-function packagedSkillCandidates() {
+function assetRootCandidates() {
+  const execDir = dirname(process.execPath);
   return [
-    join(ROOT_DIR, '.claude', 'skills', SKILL_NAME),
-    join(dirname(process.execPath), '..', 'skills', SKILL_NAME),
-  ];
+    process.env[PACKAGE_ROOT_ENV],
+    ROOT_DIR,
+    execDir,
+  ].filter(Boolean);
+}
+
+function packagedSkillCandidates() {
+  return assetRootCandidates().map(root => join(root, 'skills', SKILL_NAME));
 }
 
 function findSkillSource() {
@@ -90,7 +97,8 @@ export function installSkill(providerName, options = {}) {
 
   const source = findSkillSource();
   if (!source) {
-    throw new Error(`Bundled skill not found: ${SKILL_NAME}`);
+    const searched = packagedSkillCandidates().map(path => `  - ${resolvePath(path)}`).join('\n');
+    throw new Error(`Bundled skill not found: ${SKILL_NAME}\nSearched:\n${searched}`);
   }
 
   const skillsDir = resolvePath(expandHome(options.target ?? provider.defaultDir()));

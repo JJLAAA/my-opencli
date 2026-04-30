@@ -23,6 +23,6 @@ cpSync('adapters', 'npm/adapters', { recursive: true });
 
 // copy skill into npm package
 console.log('copying skill...');
-cpSync('.claude/skills/tap-adapter-author', 'npm/skills/tap-adapter-author', { recursive: true });
+cpSync('skills/tap-adapter-author', 'npm/skills/tap-adapter-author', { recursive: true });
 
 console.log('done.');

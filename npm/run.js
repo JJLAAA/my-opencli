@@ -18,7 +18,13 @@ if (!name) {
   process.exit(1);
 }
 
-const result = spawnSync(path.join(__dirname, 'binaries', name), process.argv.slice(2), { stdio: 'inherit' });
+const result = spawnSync(path.join(__dirname, 'binaries', name), process.argv.slice(2), {
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    TAP_PACKAGE_ROOT: __dirname,
+  },
+});
 if (result.error) {
   console.error(result.error.message);
   process.exit(1);

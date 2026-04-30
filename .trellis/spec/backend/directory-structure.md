@@ -26,6 +26,8 @@ tap/
 │   │   └── hot.js
 │   └── linuxdo/
 │       └── news.js
+├── skills/             # TAP-owned bundled assistant skills
+│   └── tap-adapter-author/
 └── tap                 # Compiled bun single-file executable
 ```
 
@@ -59,7 +61,12 @@ Contract:
 - `codex` defaults to `$CODEX_HOME/skills/tap-adapter-author`, or `~/.codex/skills/tap-adapter-author` when `CODEX_HOME` is unset
 - `--target <dir>` means the parent skills directory; the command appends `tap-adapter-author`
 - Existing target directories are not overwritten unless `--force` is passed
-- npm packages may bundle `skills/tap-adapter-author/`, but `postinstall` must not write to assistant-specific directories
+- Bundled skill source lives at `skills/tap-adapter-author/`
+- Runtime lookup uses `<assetsRoot>/skills/tap-adapter-author`, where `assetsRoot` is one of:
+  - `TAP_PACKAGE_ROOT` when an npm wrapper launches the binary
+  - repo root for source execution
+  - executable directory for standalone binary execution
+- npm packages bundle `skills/tap-adapter-author/`, but `postinstall` must not write to assistant-specific directories
 
 ### Local Setup and Browser Runtime Commands
 
