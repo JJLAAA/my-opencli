@@ -27,6 +27,9 @@ export function globalHelp() {
     '',
     sectionTitle('Commands'),
     '  help              Show global, site, or command help',
+    '  setup             Initialize local TAP files explicitly',
+    '  browser           Manage the agent Chrome runtime',
+    '  doctor            Diagnose local TAP setup',
     '  skill             Install bundled AI assistant skills',
   ];
 

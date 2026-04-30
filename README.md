@@ -2,7 +2,7 @@
 
 A lightweight CLI tool for executing declarative data pipelines that fetch and transform data from web sources.
 
-> TAP is a simplified version of [opencli](https://github.com/jackwener/opencli). For a more complete implementation with richer features, see the original project.
+> TAP is a lightweight version of [opencli](https://github.com/jackwener/opencli). The core difference is intentional browser isolation: TAP treats Chrome as a dedicated agent runtime instead of controlling the user's everyday browser through a daemon and extension.
 
 ---
 
@@ -32,6 +32,21 @@ The pipeline runs steps sequentially. Each step receives the output of the previ
 
 ---
 
+## TAP vs OpenCLI
+
+OpenCLI optimizes for low-friction reuse of the user's existing Chrome session. It uses a local daemon plus a Browser Bridge extension to control the already-running browser, so browser-backed commands can reuse the cookies and tabs from the user's daily Chrome profile.
+
+TAP deliberately uses a different model: Chrome is an **agent operating platform**. Browser-backed adapters connect to a Chrome instance that the user explicitly starts with remote debugging, usually with a dedicated profile such as `~/.chrome-automation-profile`. You log into target sites inside that profile once, then TAP reuses that agent profile for future runs.
+
+This keeps human browsing and agent automation separate:
+
+- Agent mistakes are contained to the automation profile, not the user's daily browser.
+- Cookies, localStorage, extensions, and tabs are reproducible and easier to debug.
+- No browser extension or daemon is required.
+- The trade-off is an explicit first-time initialization step: start the agent Chrome and log in there.
+
+---
+
 ## Installation
 
 **Prerequisites:** [Bun](https://bun.sh) runtime.
@@ -49,6 +64,14 @@ Move the binary somewhere on your `$PATH`:
 mv tap /usr/local/bin/tap
 ```
 
+Initialize user-owned TAP files explicitly:
+
+```bash
+tap setup
+```
+
+`tap setup` creates `~/.tap/`, writes a default `~/.tap/config.json`, and installs bundled adapters into `~/.tap/adapters/`. Existing adapter files are kept unless you pass `--force`.
+
 ---
 
 ## Usage
@@ -56,6 +79,18 @@ mv tap /usr/local/bin/tap
 ```bash
 # List available sites and commands
 tap help
+
+# Initialize or refresh local TAP files
+tap setup
+tap setup --force
+
+# Diagnose local setup
+tap doctor
+
+# Manage agent Chrome
+tap browser start
+tap browser status
+tap browser stop
 
 # List commands for a site
 tap help bilibili
@@ -87,6 +122,7 @@ tap linuxdo news --limit 5
 |----------|---------|-------------|
 | `TAP_CDP_ENDPOINT` | `http://localhost:9222` | Chrome DevTools Protocol endpoint for browser-based adapters |
 | `TAP_ADAPTERS_DIR` | _(none)_ | Additional directory to search for adapters (takes priority over user and built-in adapters) |
+| `TAP_CHROME_PATH` | _(auto-detected)_ | Chrome executable path used by `tap browser start` |
 
 ### Adapter Search Order
 
@@ -338,24 +374,15 @@ pipeline: [
 
 ## Browser-Based Adapters
 
-Adapters using `navigate`, `evaluate`, or `intercept` require a running Chrome instance with remote debugging enabled:
+Adapters using `navigate`, `evaluate`, or `intercept` require a running agent Chrome instance with remote debugging enabled. The recommended path is:
 
 ```bash
-# macOS
-/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-  --remote-debugging-port=9222 \
-  --user-data-dir=~/.chrome-automation-profile \
-  --no-first-run \
-  --no-default-browser-check
-
-# Linux
-google-chrome --remote-debugging-port=9222
-
-# Headless
-google-chrome --headless --remote-debugging-port=9222
+tap setup
+tap browser start
+tap doctor
 ```
 
-TAP auto-detects whether an adapter needs the browser by scanning its pipeline steps. A new tab is opened per run and closed when done.
+`tap browser start` uses a dedicated automation profile (`~/.chrome-automation-profile` by default) so agent browsing is separate from your daily Chrome profile. Log into target sites inside this agent Chrome profile only when an adapter needs login state. TAP auto-detects whether an adapter needs the browser by scanning its pipeline steps. A new tab is opened per run and closed when done.
 
 ---
 
@@ -394,7 +421,7 @@ The skill depends on the **chrome-devtools MCP** for automated reconnaissance (n
      --no-default-browser-check
    ```
 
-   The skill reuses your existing browser session — it does not handle authentication itself.
+   The skill reuses the logged-in agent Chrome profile — it does not handle authentication itself. This is intentionally separate from your daily Chrome profile.
 
 > **Planned**: automate both steps so no manual setup is needed.
 

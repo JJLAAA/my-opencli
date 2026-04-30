@@ -1,7 +1,8 @@
 import { WebSocket } from 'ws';
 import { request } from 'node:http';
+import { configuredCdpEndpoint } from './config.js';
 
-function httpRequest(url, method = 'GET') {
+export function httpRequest(url, method = 'GET') {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const opts = { hostname: parsed.hostname, port: parsed.port, path: parsed.pathname, method };
@@ -183,7 +184,7 @@ class CDPSession {
 }
 
 export async function openSession() {
-  const base = (process.env.TAP_CDP_ENDPOINT ?? 'http://localhost:9222').replace(/\/$/, '');
+  const base = configuredCdpEndpoint();
   const target = await httpRequest(`${base}/json/new`, 'PUT');
   const session = new CDPSession(target.webSocketDebuggerUrl);
   await session.connect();
@@ -192,4 +193,21 @@ export async function openSession() {
 
 export async function closeTab(base, targetId) {
   try { await httpRequest(`${base}/json/close/${targetId}`, 'GET'); } catch {}
+}
+
+export async function cdpVersion(base = configuredCdpEndpoint()) {
+  return await httpRequest(`${base}/json/version`, 'GET');
+}
+
+export async function closeBrowser(base = configuredCdpEndpoint()) {
+  const version = await cdpVersion(base);
+  if (!version?.webSocketDebuggerUrl) throw new Error(`CDP endpoint does not expose Browser websocket: ${base}`);
+
+  const session = new CDPSession(version.webSocketDebuggerUrl);
+  await session.connect();
+  try {
+    await session.send('Browser.close');
+  } finally {
+    session.close();
+  }
 }

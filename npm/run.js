@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { execFileSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const path = require('path');
 const os = require('os');
 
@@ -18,4 +18,10 @@ if (!name) {
   process.exit(1);
 }
 
-execFileSync(path.join(__dirname, 'binaries', name), process.argv.slice(2), { stdio: 'inherit' });
+const result = spawnSync(path.join(__dirname, 'binaries', name), process.argv.slice(2), { stdio: 'inherit' });
+if (result.error) {
+  console.error(result.error.message);
+  process.exit(1);
+}
+
+process.exit(result.status ?? 1);

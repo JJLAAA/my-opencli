@@ -4,6 +4,17 @@ import { executePipeline } from './executor.js';
 import { commandHelp, globalHelp, siteHelp } from './help.js';
 import { printOutput } from './output.js';
 import { installSkill, skillHelp } from './skills.js';
+import { formatSetupResult, runSetup, setupHelp } from './setup.js';
+import {
+  browserHelp,
+  browserStatus,
+  formatBrowserStart,
+  formatBrowserStatus,
+  formatBrowserStop,
+  startBrowser,
+  stopBrowser,
+} from './browser.js';
+import { doctorHelp, formatDoctorResult, runDoctor } from './doctor.js';
 
 function fail(message) {
   console.error(message);
@@ -45,6 +56,18 @@ function parseSkillInstallArgs(rest) {
   return { provider, options };
 }
 
+function parseBooleanFlags(rest, allowed, helpText) {
+  const options = {};
+  for (const token of rest) {
+    if (!token.startsWith('--')) fail(`Unknown argument: ${token}\n\n${helpText}`);
+
+    const key = token.slice(2);
+    if (!allowed.includes(key)) fail(`Unknown option: ${token}\n\n${helpText}`);
+    options[key] = true;
+  }
+  return options;
+}
+
 function printHelp(text) {
   console.log(text);
   process.exit(0);
@@ -80,10 +103,71 @@ function runSkillCommand(tokens) {
   process.exit(0);
 }
 
+function runSetupCommand(tokens) {
+  if (tokens.some(isHelpToken)) printHelp(setupHelp());
+  const options = parseBooleanFlags(tokens, ['force'], setupHelp());
+
+  let result;
+  try {
+    result = runSetup(options);
+  } catch (error) {
+    fail(error.message);
+  }
+
+  console.log(formatSetupResult(result));
+  process.exit(0);
+}
+
+async function runBrowserCommand(tokens) {
+  const [command, ...rest] = tokens;
+  if (!command || isHelpToken(command)) printHelp(browserHelp());
+  if (rest.some(isHelpToken)) printHelp(browserHelp(command));
+
+  try {
+    if (command === 'status') {
+      if (rest.length) fail(`Unknown argument: ${rest[0]}\n\n${browserHelp('status')}`);
+      const status = await browserStatus();
+      console.log(formatBrowserStatus(status));
+      process.exit(status.ok ? 0 : 1);
+    }
+
+    if (command === 'start') {
+      const options = parseBooleanFlags(rest, ['headless'], browserHelp('start'));
+      console.log(formatBrowserStart(await startBrowser(options)));
+      process.exit(0);
+    }
+
+    if (command === 'stop') {
+      if (rest.length) fail(`Unknown argument: ${rest[0]}\n\n${browserHelp('stop')}`);
+      console.log(formatBrowserStop(await stopBrowser()));
+      process.exit(0);
+    }
+
+    fail(`Unknown browser command: ${command}\n\n${browserHelp()}`);
+  } catch (error) {
+    fail(error.message);
+  }
+}
+
+async function runDoctorCommand(tokens) {
+  if (tokens.some(isHelpToken)) printHelp(doctorHelp());
+  if (tokens.length) fail(`Unknown argument: ${tokens[0]}\n\n${doctorHelp()}`);
+
+  const result = await runDoctor();
+  console.log(formatDoctorResult(result));
+  process.exit(result.ok ? 0 : 1);
+}
+
 export async function runCli(argv = process.argv.slice(2)) {
   const tokens = argv;
   if (tokens[0] === 'skill') runSkillCommand(tokens.slice(1));
   if (tokens[0] === 'help' && tokens[1] === 'skill') printHelp(skillHelp(tokens[2]));
+  if (tokens[0] === 'setup') runSetupCommand(tokens.slice(1));
+  if (tokens[0] === 'help' && tokens[1] === 'setup') printHelp(setupHelp());
+  if (tokens[0] === 'browser') await runBrowserCommand(tokens.slice(1));
+  if (tokens[0] === 'help' && tokens[1] === 'browser') printHelp(browserHelp(tokens[2]));
+  if (tokens[0] === 'doctor') await runDoctorCommand(tokens.slice(1));
+  if (tokens[0] === 'help' && tokens[1] === 'doctor') printHelp(doctorHelp());
 
   const adapters = listAdapters();
 

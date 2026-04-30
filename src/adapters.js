@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, join } from 'node:path';
-import { homedir } from 'node:os';
+import { dirname, join, resolve as resolvePath } from 'node:path';
+import { userAdaptersDir } from './config.js';
 
 const ROOT_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const BUILTIN_ADAPTERS_DIR = join(ROOT_DIR, 'adapters');
@@ -20,12 +20,24 @@ function compareNames(a, b) {
 
 export function getAdapterDirectories() {
   const configured = process.env.TAP_ADAPTERS_DIR;
-  const userAdaptersDir = join(homedir(), '.tap', 'adapters');
+  const userDir = userAdaptersDir();
   const candidates = configured
-    ? [configured, userAdaptersDir, BUILTIN_ADAPTERS_DIR]
-    : [userAdaptersDir, BUILTIN_ADAPTERS_DIR];
+    ? [configured, userDir, ...builtinAdapterCandidates()]
+    : [userDir, ...builtinAdapterCandidates()];
 
   return unique(candidates).filter(isDirectory);
+}
+
+export function builtinAdapterCandidates() {
+  return unique([
+    BUILTIN_ADAPTERS_DIR,
+    join(dirname(process.execPath), 'adapters'),
+    join(dirname(process.execPath), '..', 'adapters'),
+  ].map(path => resolvePath(path)));
+}
+
+export function findBuiltinAdaptersDir() {
+  return builtinAdapterCandidates().find(isDirectory) ?? null;
 }
 
 export function resolveAdapterPath(site, command) {

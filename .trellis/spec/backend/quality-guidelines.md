@@ -28,6 +28,7 @@ TAP is a small, focused CLI tool. The quality bar is: readable, minimal, correct
 - **No TypeScript** — plain `.js` files only
 - **No test framework** — manual testing against live Chrome; no unit test suite currently
 - **No assistant-specific postinstall writes** — npm `postinstall` may prepare TAP runtime files, but must not write to `~/.claude`, `~/.codex`, or other AI assistant directories
+- **No user TAP state postinstall writes** — npm `postinstall` must not create or modify `~/.tap`; user-owned TAP state is initialized only by explicit commands such as `tap setup`
 
 ---
 
@@ -50,3 +51,4 @@ Produces `tap` — a standalone Bun single-file executable. The binary is commit
 - [ ] Template expressions use `${{ expr }}` syntax
 - [ ] Cleanup runs in `finally` (browser tab is closed)
 - [ ] Errors propagate correctly (no silent swallowing except `closeTab`)
+- [ ] `tap setup` is the only path that creates or refreshes `~/.tap`
