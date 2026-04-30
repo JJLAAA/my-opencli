@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 9
+- **Total Sessions**: 10
 - **Last Active**: 2026-04-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~393 | Active |
+| `journal-1.md` | ~435 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 10 | 2026-04-30 | Unify bundled skill asset layout | `312e3f3` | `main` |
 | 9 | 2026-04-30 | Add setup browser doctor commands | `99f7788` | `main` |
 | 8 | 2026-04-30 | Explicit skill installation | `08345b5` | `main` |
 | 7 | 2026-04-29 | Prioritize user adapters | `d9eee02` | `main` |

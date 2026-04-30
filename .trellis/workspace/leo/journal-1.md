@@ -400,3 +400,36 @@ Made tap-adapter-author skill installation explicit via tap skill install for cl
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: Unify bundled skill asset layout
+
+**Date**: 2026-04-30
+**Task**: Unify bundled skill asset layout
+**Branch**: `main`
+
+### Summary
+
+Moved bundled tap-adapter-author skill into TAP-owned skills/ layout, updated skill resolution to use TAP_PACKAGE_ROOT/package roots, adjusted npm wrapper/build copy path, and verified source, standalone binary, and npm wrapper installs for Codex and Claude Code.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `312e3f3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
