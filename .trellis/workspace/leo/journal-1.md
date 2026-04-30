@@ -48,7 +48,7 @@
 
 ### Summary
 
-(Add summary)
+Completed and committed setup/browser/doctor CLI work in `99f7788`. The session added explicit local TAP initialization, agent Chrome lifecycle commands, diagnostics, npm package behavior cleanup, and matching README/spec documentation.
 
 ### Main Changes
 
@@ -81,7 +81,16 @@
 
 ### Testing
 
-- [OK] (Add test results)
+- [OK] `bun run build`
+- [OK] `bun run build:npm`
+- [OK] `git diff --check`
+- [OK] `tap setup` first run, repeated run, and `--force` with temporary HOME directories
+- [OK] `tap doctor` setup diagnostics with expected CDP failure while Chrome is not running
+- [OK] `tap browser status` expected failure path when CDP is unavailable
+- [OK] `node npm/run.js setup` against npm package layout
+- [OK] `node npm/install.js` did not create user TAP state
+- [WARN] `pnpm lint`, `pnpm type-check`, and `pnpm test` unavailable because `pnpm` is not installed and repo scripts are not defined
+- [WARN] Real `tap browser start/stop` not exercised to avoid launching GUI Chrome during finish checks
 
 ### Status
 
@@ -329,6 +338,60 @@ Made tap-adapter-author skill installation explicit via tap skill install for cl
 - [OK] `npm/binaries/tap-darwin-arm64 skill install codex --target /tmp/tap-finish-npm-skill --force`
 - [OK] Invalid target and missing `--target` value return clean CLI errors
 - [OK] `git diff --check`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 9: Add setup browser doctor commands
+
+**Date**: 2026-04-30
+**Task**: Add setup browser doctor commands
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| CLI setup | Added explicit `tap setup` to create `~/.tap`, config, logs, and install bundled adapters without overwriting by default. |
+| Browser runtime | Added `tap browser start/status/stop` using a dedicated automation Chrome profile and CDP endpoint checks. |
+| Diagnostics | Added `tap doctor` with actionable pass/fail checks for local state, config, bundled adapters, Chrome, and CDP. |
+| npm install | Removed implicit `~/.tap` writes from npm `postinstall`; npm package wrapper now preserves child exit status. |
+| Docs/spec | Updated English/Chinese README docs and backend code-spec contracts for setup/browser/doctor commands. |
+
+**Verification**:
+- `bun run build` passed
+- `bun run build:npm` passed
+- `git diff --check` passed
+- `tap setup` first run, repeated run, and `--force` behavior verified with temporary HOME directories
+- `tap doctor` verified to pass local setup checks and fail CDP when agent Chrome is not running
+- `tap browser status` verified to fail cleanly when CDP is unavailable
+- `node npm/run.js setup` verified against npm package layout
+- `node npm/install.js` verified not to create user TAP state
+
+**Notes**:
+- `pnpm lint`, `pnpm type-check`, and `pnpm test` could not run because `pnpm` is unavailable in the environment and the repo does not define those scripts.
+- Real `tap browser start/stop` lifecycle was not exercised to avoid launching a GUI Chrome process during finish checks.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `99f7788` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
 
 ### Status
 
