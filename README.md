@@ -25,7 +25,7 @@ TAP separates **what to fetch** from **how to fetch it**:
 CLI Args
   └─ Load Adapter from ~/.tap/adapters/<site>/<command>.js
        └─ executePipeline(steps, args, cdpSession?)
-            └─ printOutput(data, format, columns)
+            └─ printOutput(data, format, { adapter, site, command, args })
 ```
 
 The pipeline runs steps sequentially. Each step receives the output of the previous step as `data` and produces a new `data` for the next.
@@ -70,7 +70,7 @@ Initialize user-owned TAP files explicitly:
 tap setup
 ```
 
-`tap setup` creates `~/.tap/`, writes a default `~/.tap/config.json`, and installs bundled adapters into `~/.tap/adapters/`. Existing adapter files are kept unless you pass `--force`.
+`tap setup` creates `~/.tap/`, writes a default `~/.tap/config.json`, and installs bundled adapters into `~/.tap/adapters/` when bundled adapters exist. Existing adapter files are kept unless you pass `--force`.
 
 ---
 
@@ -92,26 +92,25 @@ tap browser start
 tap browser status
 tap browser stop
 
-# List commands for a site
-tap help bilibili
+# List commands for a site after installing an adapter
+tap help example
 
 # Show command options
-tap help bilibili hot
+tap help example list
 # or:
-tap bilibili hot --help
+tap example list --help
 
 # Run a command
-tap bilibili hot
-tap bilibili hot --limit 10
-tap bilibili hot --format table
-tap linuxdo news --limit 5
+tap example list
+tap example list --limit 10
+tap example list --format table
 ```
 
 ### Output Formats
 
 | Flag | Description |
 |------|-------------|
-| _(default)_ / `--format json` | JSON array for agent-friendly parsing |
+| _(default)_ / `--format json` | JSON envelope with `meta`, `schema`, and `items` for agent-friendly parsing |
 | `--format table` | ASCII table for human-readable output |
 
 ---
@@ -153,7 +152,21 @@ export default {
     { name: 'limit', default: 20, description: 'Max items to return.' },
     { name: 'keyword', required: true, description: 'Search term.' },
   ],
-  columns: ['rank', 'title', 'author', 'play'],
+  output: {
+    type: 'list',
+    itemName: 'item',
+    fields: {
+      rank: {
+        type: 'integer',
+        description: 'One-based rank in the returned result set.',
+      },
+      title: {
+        type: 'string',
+        description: 'Item title.',
+      },
+    },
+  },
+  columns: ['rank', 'title'],
   pipeline: [ /* steps */ ],
 };
 ```
@@ -162,8 +175,43 @@ export default {
 |-------|----------|-------------|
 | `description` | No | Shown in `tap help <site> <command>` |
 | `args` | No | CLI params with defaults and descriptions |
+| `output.fields` | Yes for JSON output | Machine-readable field contract used to build the JSON schema |
 | `columns` | No | Table column order; must match map output keys |
 | `pipeline` | Yes | Ordered array of steps |
+
+### JSON Output Contract
+
+`--format json` prints an envelope:
+
+```json
+{
+  "meta": {
+    "site": "example",
+    "command": "list",
+    "resultType": "list",
+    "generatedAt": "2026-05-01T12:00:00.000Z",
+    "args": { "limit": 5 }
+  },
+  "schema": {
+    "type": "array",
+    "itemName": "item",
+    "items": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Item title."
+        }
+      }
+    }
+  },
+  "items": [
+    { "title": "Example" }
+  ]
+}
+```
+
+The runtime does not infer field meaning from row keys or `columns`. JSON output requires explicit `output.fields`, and `items` only includes fields declared there. Extra fields produced by the pipeline are dropped from JSON output.
 
 ### Pipeline Steps
 
@@ -308,6 +356,20 @@ No browser needed. Direct HTTP fetch.
 ```js
 export default {
   args: [{ name: 'limit', default: 20 }],
+  output: {
+    type: 'list',
+    itemName: 'entry',
+    fields: {
+      title: {
+        type: 'string',
+        description: 'Entry title.',
+      },
+      score: {
+        type: 'number',
+        description: 'Entry score from the source API.',
+      },
+    },
+  },
   columns: ['title', 'score'],
   pipeline: [
     { fetch: 'https://api.example.com/top' },
@@ -439,10 +501,11 @@ The skill will:
 
 1. **Identify the fetch pattern** — public API, login-gated, intercepted XHR, or DOM scraping
 2. **Validate the endpoint** — confirm the API returns the expected data
-3. **Decode the field structure** — map response fields to output columns
-4. **Assemble the pipeline** — produce a complete adapter file
-5. **Install it** — write to `~/.tap/adapters/<site>/<command>.js`
-6. **Verify** — run `tap <site> <command>` and confirm output
+3. **Decode the field structure** — map response fields to schema-confirmed output fields
+4. **Confirm the schema** — review field names, raw paths, types, descriptions, units, formats, and examples
+5. **Assemble the pipeline** — produce a complete adapter file with `output.fields`
+6. **Install it** — write to `~/.tap/adapters/<site>/<command>.js`
+7. **Verify** — run `tap <site> <command> --format json` and confirm the envelope schema and items
 
 ### Decision Tree
 
@@ -461,30 +524,11 @@ If stuck, the skill has a fallback path for each failure mode (403, empty array,
 
 ## Examples
 
-### Built-in: Bilibili Hot Videos
+TAP no longer ships site-specific example adapters by default. Use `tap-adapter-author` to create a schema-confirmed adapter under `~/.tap/adapters/<site>/<command>.js`, then run it:
 
 ```bash
-tap bilibili hot
-tap bilibili hot --limit 5
-tap bilibili hot --format table
-```
-
-```json
-[
-  {
-    "rank": "1",
-    "title": "...",
-    "author": "...",
-    "play": "1234567"
-  }
-]
-```
-
-### Built-in: Linux.do News
-
-```bash
-tap linuxdo news
-tap linuxdo news --limit 10
+tap example list --limit 5 --format json
+tap example list --limit 5 --format table
 ```
 
 ---
@@ -501,9 +545,9 @@ tap/
 │   ├── adapters.js         # Adapter discovery and loading
 │   ├── help.js             # Help text generation
 │   └── output.js           # Table / JSON formatter
-└── adapters/               # Built-in adapters
-    ├── bilibili/hot.js
-    └── linuxdo/news.js
+├── adapters/               # Optional built-in adapters
+└── skills/                 # Bundled assistant skills
+    └── tap-adapter-author/
 ```
 
 User adapters live in `~/.tap/adapters/` and take precedence over built-ins.

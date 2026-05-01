@@ -1,5 +1,5 @@
 import { execSync, execFileSync } from 'child_process';
-import { mkdirSync, cpSync } from 'fs';
+import { mkdirSync, cpSync, existsSync } from 'fs';
 
 const targets = [
   ['bun-darwin-arm64', 'tap-darwin-arm64'],
@@ -17,9 +17,10 @@ for (const [target, out] of targets) {
   );
 }
 
-// copy built-in adapters into npm package
+// copy optional built-in adapters into npm package
 console.log('copying adapters...');
-cpSync('adapters', 'npm/adapters', { recursive: true });
+mkdirSync('npm/adapters', { recursive: true });
+if (existsSync('adapters')) cpSync('adapters', 'npm/adapters', { recursive: true });
 
 // copy skill into npm package
 console.log('copying skill...');

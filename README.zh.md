@@ -21,13 +21,15 @@ TAP 将**抓取什么**与**如何抓取**分离(意图与实现分离)：
 - **适配器**（`~/.tap/adapters/<site>/<command>.js`）声明 pipeline —— 一系列描述数据来源和转换方式的步骤。
 - **核心引擎**负责执行步骤、管理浏览器会话、格式化输出。
 
+长期方向见：[TAP 长期规划：面向 Agent 的只读业务数据接入层](docs/readonly-data-access-roadmap.md)。
+
 ### 执行流程
 
 ```
 CLI 参数
   └─ 从 ~/.tap/adapters/<site>/<command>.js 加载适配器
        └─ executePipeline(steps, args, cdpSession?)
-            └─ printOutput(data, format, columns)
+            └─ printOutput(data, format, { adapter, site, command, args })
 ```
 
 Pipeline 按顺序执行每个步骤。每个步骤接收上一步的输出作为 `data`，并产生新的 `data` 传递给下一步。
@@ -72,7 +74,7 @@ mv tap /usr/local/bin/tap
 tap setup
 ```
 
-`tap setup` 会创建 `~/.tap/`，写入默认 `~/.tap/config.json`，并将内置适配器安装到 `~/.tap/adapters/`。已有适配器默认保留，只有传入 `--force` 才会覆盖。
+`tap setup` 会创建 `~/.tap/`，写入默认 `~/.tap/config.json`，并在存在内置适配器时安装到 `~/.tap/adapters/`。已有适配器默认保留，只有传入 `--force` 才会覆盖。
 
 ---
 
@@ -94,26 +96,25 @@ tap browser start
 tap browser status
 tap browser stop
 
-# 查看某个站点的命令
-tap help bilibili
+# 安装适配器后查看某个站点的命令
+tap help example
 
 # 查看命令的参数说明
-tap help bilibili hot
+tap help example list
 # 或：
-tap bilibili hot --help
+tap example list --help
 
 # 执行命令
-tap bilibili hot
-tap bilibili hot --limit 10
-tap bilibili hot --format table
-tap linuxdo news --limit 5
+tap example list
+tap example list --limit 10
+tap example list --format table
 ```
 
 ### 输出格式
 
 | 参数 | 说明 |
 |------|------|
-| _（默认）_ / `--format json` | JSON 数组，便于 Agent 解析 |
+| _（默认）_ / `--format json` | 包含 `meta`、`schema`、`items` 的 JSON envelope，便于 Agent 解析 |
 | `--format table` | ASCII 表格，便于人工阅读 |
 
 ---
@@ -155,7 +156,21 @@ export default {
     { name: 'limit', default: 20, description: '最多返回多少条。' },
     { name: 'keyword', required: true, description: '搜索关键词。' },
   ],
-  columns: ['rank', 'title', 'author', 'play'],
+  output: {
+    type: 'list',
+    itemName: 'item',
+    fields: {
+      rank: {
+        type: 'integer',
+        description: 'One-based rank in the returned result set.',
+      },
+      title: {
+        type: 'string',
+        description: 'Item title.',
+      },
+    },
+  },
+  columns: ['rank', 'title'],
   pipeline: [ /* 步骤数组 */ ],
 };
 ```
@@ -164,8 +179,43 @@ export default {
 |------|------|------|
 | `description` | 否 | 在 `tap help <site> <command>` 中显示 |
 | `args` | 否 | CLI 参数，支持默认值和说明 |
+| `output.fields` | JSON 输出必填 | 机器可读字段契约，用于生成 JSON schema |
 | `columns` | 否 | 表格列名顺序，必须与 map 步骤输出的 key 对应 |
 | `pipeline` | 是 | 有序的步骤数组 |
+
+### JSON 输出契约
+
+`--format json` 输出 envelope：
+
+```json
+{
+  "meta": {
+    "site": "example",
+    "command": "list",
+    "resultType": "list",
+    "generatedAt": "2026-05-01T12:00:00.000Z",
+    "args": { "limit": 5 }
+  },
+  "schema": {
+    "type": "array",
+    "itemName": "item",
+    "items": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Item title."
+        }
+      }
+    }
+  },
+  "items": [
+    { "title": "Example" }
+  ]
+}
+```
+
+Runtime 不会从 row key 或 `columns` 推断字段含义。JSON 输出要求 adapter 显式声明 `output.fields`，并且 `items` 只包含 schema 声明过的字段。Pipeline 产出的额外字段会从 JSON 输出中丢弃。
 
 ### Pipeline 步骤
 
@@ -310,6 +360,20 @@ export default {
 ```js
 export default {
   args: [{ name: 'limit', default: 20 }],
+  output: {
+    type: 'list',
+    itemName: 'entry',
+    fields: {
+      title: {
+        type: 'string',
+        description: 'Entry title.',
+      },
+      score: {
+        type: 'number',
+        description: 'Entry score from the source API.',
+      },
+    },
+  },
   columns: ['title', 'score'],
   pipeline: [
     { fetch: 'https://api.example.com/top' },
@@ -424,10 +488,11 @@ skill 会引导你完成：
 
 1. **判断获取模式** — 公开 API、需要登录、拦截 XHR 还是 DOM 抓取
 2. **验证端点** — 确认 API 返回预期数据
-3. **解码字段结构** — 将响应字段映射到输出列
-4. **组装 pipeline** — 生成完整的适配器文件
-5. **安装适配器** — 写入 `~/.tap/adapters/<site>/<command>.js`
-6. **验证** — 运行 `tap <site> <command>` 确认输出正确
+3. **解码字段结构** — 将响应字段映射到经过 schema 确认的输出字段
+4. **确认 schema** — 核对字段名、raw path、类型、说明、单位、格式和样例
+5. **组装 pipeline** — 生成包含 `output.fields` 的完整适配器文件
+6. **安装适配器** — 写入 `~/.tap/adapters/<site>/<command>.js`
+7. **验证** — 运行 `tap <site> <command> --format json` 确认 envelope schema 和 items
 
 ### 决策树
 
@@ -446,30 +511,11 @@ skill 会引导你完成：
 
 ## 示例
 
-### 内置：Bilibili 热门视频
+TAP 默认不再内置具体站点示例适配器。使用 `tap-adapter-author` 在 `~/.tap/adapters/<site>/<command>.js` 下创建经过 schema 确认的适配器后再运行：
 
 ```bash
-tap bilibili hot
-tap bilibili hot --limit 5
-tap bilibili hot --format table
-```
-
-```json
-[
-  {
-    "rank": "1",
-    "title": "...",
-    "author": "...",
-    "play": "1234567"
-  }
-]
-```
-
-### 内置：Linux.do 新闻
-
-```bash
-tap linuxdo news
-tap linuxdo news --limit 10
+tap example list --limit 5 --format json
+tap example list --limit 5 --format table
 ```
 
 ---
@@ -486,9 +532,9 @@ tap/
 │   ├── adapters.js         # 适配器发现与加载
 │   ├── help.js             # Help 文本生成
 │   └── output.js           # 表格 / JSON 格式化输出
-└── adapters/               # 内置适配器
-    ├── bilibili/hot.js
-    └── linuxdo/news.js
+├── adapters/               # 可选内置适配器
+└── skills/                 # 内置 assistant skills
+    └── tap-adapter-author/
 ```
 
 用户适配器存放于 `~/.tap/adapters/`，优先级高于内置适配器。

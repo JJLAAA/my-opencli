@@ -21,11 +21,7 @@ tap/
 │   ├── executor.js     # Pipeline execution engine
 │   ├── skills.js       # Explicit AI assistant skill installation
 │   └── output.js       # Output formatter (table / json)
-├── adapters/           # Built-in adapters (installed to ~/.tap/adapters/ for use)
-│   ├── bilibili/
-│   │   └── hot.js
-│   └── linuxdo/
-│       └── news.js
+├── adapters/           # Optional built-in adapters (may be empty)
 ├── skills/             # TAP-owned bundled assistant skills
 │   └── tap-adapter-author/
 └── tap                 # Compiled bun single-file executable
@@ -41,7 +37,7 @@ Each core module is a single file with a clear, single responsibility:
 - `src/cdp.js` — exports `openSession()` and `closeTab()`, contains `CDPSession` class
 - `src/executor.js` — exports `executePipeline(pipeline, args, session)`
 - `src/skills.js` — exports `installSkill(providerName, options)` and `skillHelp(command)` for explicit skill installation
-- `src/output.js` — exports `printOutput(data, format, columns)`
+- `src/output.js` — exports `printOutput(data, format, options)` and renders schema-aware JSON envelopes or tables
 
 New core capabilities go in `src/` as their own file. Do not add logic to `bin/cli.js`.
 
@@ -104,7 +100,7 @@ Default local state:
 - Default `chromeProfile`: `~/.chrome-automation-profile`
 - Environment overrides: `TAP_CDP_ENDPOINT`, `TAP_ADAPTERS_DIR`, `TAP_CHROME_PATH`
 
-Bundled adapter lookup must support both source and npm binary layouts:
+Bundled adapter lookup must support both source and npm binary layouts, but the directory may be absent or empty:
 
 - `<repo>/adapters`
 - `<dirname(process.execPath)>/adapters`
@@ -116,7 +112,7 @@ Side commands must route in `src/cli.js` before adapter discovery and delegate a
 
 | Case | Expected behavior |
 |------|-------------------|
-| `tap setup` and bundled adapters are missing | Exit non-zero with `Bundled adapters not found.` |
+| `tap setup` and bundled adapters are missing | Still create TAP directories/config; no adapters are installed |
 | `tap setup` finds existing adapter files | Keep them and report skipped files |
 | `tap setup --force` finds existing adapter files | Overwrite bundled adapter files and report installed files |
 | `tap browser status` cannot reach CDP | Exit non-zero and print endpoint plus connection error |
@@ -126,8 +122,8 @@ Side commands must route in `src/cli.js` before adapter discovery and delegate a
 
 #### 5. Good/Base/Bad Cases
 
-- Good: `HOME=/tmp/tap-verify tap setup` creates only files under that HOME and installs bundled adapters.
-- Base: running `tap setup` twice skips existing adapters unless `--force` is provided.
+- Good: `HOME=/tmp/tap-verify tap setup` creates only files under that HOME and installs bundled adapters when present.
+- Base: running `tap setup` twice skips existing adapters unless `--force` is provided; if no bundled adapters exist, adapter install is a no-op.
 - Bad: npm `postinstall` writes to `~/.tap` or assistant-specific directories.
 
 #### 6. Tests Required
@@ -183,4 +179,4 @@ Initialization of user-owned files belongs behind the explicit `tap setup` comma
 ## Examples
 
 - Core module pattern: `src/cdp.js` — one class + two exported functions, no side effects
-- Adapter pattern: `adapters/bilibili/hot.js` — single default export with `args`, `columns`, `pipeline`
+- Adapter pattern: `adapters/<site>/<command>.js` — single default export with `args`, `output.fields`, optional `columns`, and `pipeline`

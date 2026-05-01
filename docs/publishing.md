@@ -82,7 +82,7 @@ After installation, `tap` is available directly:
 
 ```bash
 tap --help
-tap bilibili hot
+tap help
 ```
 
 AI assistant skills are bundled but not installed automatically. Install them explicitly:

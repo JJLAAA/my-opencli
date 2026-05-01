@@ -36,7 +36,7 @@ if (!existsSync(adapterPath)) {
 try {
   if (needsBrowser) ({ session, targetId, base } = await openSession());
   const result = await executePipeline(adapter.pipeline, args, session);
-  printOutput(result, format, adapter.columns);
+  printOutput(result, format, { adapter, site, command, args });
 } finally {
   session?.close();
   if (targetId) await closeTab(base, targetId);
@@ -59,6 +59,16 @@ if (result.exceptionDetails) {
 throw new Error(`Unknown pipeline step: "${op}"`);
 ```
 
+### Invalid JSON output schema — fail fast
+
+`--format json` requires adapters to declare `output.fields`. Missing or malformed schema is a user-facing adapter authoring error and should fail with an actionable message:
+
+```js
+throw new Error('Adapter "site command" must define output.fields for JSON output.');
+```
+
+Do not infer field meaning from `columns` or output rows as a fallback. Schema meaning belongs in the adapter contract.
+
 ---
 
 ## closeTab is fire-and-forget
@@ -78,3 +88,4 @@ export async function closeTab(base, targetId) {
 - **Don't catch errors in executor/cdp** unless you can recover. Let them propagate to the `finally` in `bin/cli.js` so cleanup always runs.
 - **Don't throw from `closeTab`** — it's a best-effort cleanup.
 - **Don't add fallback data** (empty arrays, null returns) when a step genuinely failed. Fail loudly.
+- **Don't invent schema** from row keys or table columns. Fail loudly when JSON output lacks explicit `output.fields`.

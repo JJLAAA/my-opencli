@@ -27,6 +27,15 @@
 ```js
 export default {
   args: [{ name: 'limit', default: 20 }],
+  output: {
+    type: 'list',
+    itemName: 'entry',
+    fields: {
+      title: { type: 'string', description: 'Entry title.' },
+      score: { type: 'number', description: 'Entry score from the source API.' },
+      date: { type: 'string', description: 'Entry creation date.', format: 'date' },
+    },
+  },
   columns: ['title', 'score', 'date'],
   pipeline: [
     { fetch: 'https://api.example.com/list?count=50' },
@@ -44,6 +53,7 @@ export default {
 **注意**：
 - `fetch` URL 支持模板表达式，如 `'https://api.example.com/list?q=${{ args.keyword }}'`
 - 如果数据直接在顶层数组，省略 `select` 步骤
+- `output.fields` 必须先经用户确认；JSON 输出只保留这里声明的字段
 
 ---
 
@@ -54,7 +64,17 @@ export default {
 ```js
 export default {
   args: [{ name: 'limit', default: 20 }],
-  columns: ['rank', 'title', 'author', 'views'],
+  output: {
+    type: 'list',
+    itemName: 'item',
+    fields: {
+      rank: { type: 'integer', description: 'One-based rank in the returned result set.' },
+      title: { type: 'string', description: 'Item title.' },
+      author: { type: 'string', description: 'Author display name.' },
+      viewCount: { type: 'integer', description: 'View count.', unit: 'views' },
+    },
+  },
+  columns: ['rank', 'title', 'author', 'viewCount'],
   pipeline: [
     { navigate: 'https://example.com' },   // 加载页面以获取 cookie
     { evaluate: `(async () => {
@@ -65,14 +85,14 @@ export default {
         return json.data.list.map(item => ({
           title:  item.title,
           author: item.author.name,
-          views:  item.stat.view,
+          viewCount: item.stat.view,
         }));
       })()` },
     { map: {
-      rank:   '${{ index + 1 }}',
-      title:  '${{ item.title }}',
-      author: '${{ item.author }}',
-      views:  '${{ item.views }}',
+      rank:      '${{ index + 1 }}',
+      title:     '${{ item.title }}',
+      author:    '${{ item.author }}',
+      viewCount: '${{ item.viewCount }}',
     }},
     { limit: '${{ args.limit }}' },
   ],
@@ -93,7 +113,16 @@ export default {
 ```js
 export default {
   args: [{ name: 'limit', default: 20 }],
-  columns: ['rank', 'title', 'hot'],
+  output: {
+    type: 'list',
+    itemName: 'rankingItem',
+    fields: {
+      rank: { type: 'integer', description: 'One-based rank in the returned result set.' },
+      title: { type: 'string', description: 'Ranking item title.' },
+      hotScore: { type: 'number', description: 'Hot score from the source ranking API.' },
+    },
+  },
+  columns: ['rank', 'title', 'hotScore'],
   pipeline: [
     { intercept: {
         capture: 'api/ranking',          // 匹配 URL 中包含该字符串的请求
@@ -103,9 +132,9 @@ export default {
       }
     },
     { map: {
-      rank:  '${{ index + 1 }}',
-      title: '${{ item.title }}',
-      hot:   '${{ item.hot_score }}',
+      rank:     '${{ index + 1 }}',
+      title:    '${{ item.title }}',
+      hotScore: '${{ item.hot_score }}',
     }},
     { limit: '${{ args.limit }}' },
   ],
@@ -135,6 +164,15 @@ export default {
 ```js
 export default {
   args: [{ name: 'limit', default: 20 }],
+  output: {
+    type: 'list',
+    itemName: 'link',
+    fields: {
+      rank: { type: 'integer', description: 'One-based rank in the rendered list.' },
+      title: { type: 'string', description: 'Rendered item title.' },
+      url: { type: 'string', description: 'Item destination URL.', format: 'url' },
+    },
+  },
   columns: ['rank', 'title', 'url'],
   pipeline: [
     { navigate: 'https://example.com/list' },

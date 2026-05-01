@@ -20,9 +20,11 @@ function check(label, ok, detail = '') {
 
 function adapterInstallCheck() {
   const source = findBuiltinAdaptersDir();
-  if (!source) return check('Bundled adapters available', false, 'No bundled adapters directory found.');
+  if (!source) return check('Bundled adapters', true, 'No bundled adapters configured.');
 
   const files = listFiles(source).filter(file => file.endsWith('.js'));
+  if (!files.length) return check('Bundled adapters', true, 'No bundled adapters configured.');
+
   const missing = files.filter(file => !existsSync(join(userAdaptersDir(), file)));
   if (missing.length) {
     return check(

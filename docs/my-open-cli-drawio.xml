@@ -5,13 +5,13 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="n1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;" value="mycli linuxdo news" vertex="1">
+        <mxCell id="n1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;" value="tap example list" vertex="1">
           <mxGeometry height="50" width="200" x="300" y="30" as="geometry" />
         </mxCell>
-        <mxCell id="n2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="bin/cli.js 解析参数&#xa;site=linuxdo, command=news" vertex="1">
+        <mxCell id="n2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="bin/cli.js 解析参数&#xa;site=example, command=list" vertex="1">
           <mxGeometry height="60" width="220" x="290" y="115" as="geometry" />
         </mxCell>
-        <mxCell id="n3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="加载 adapters/linuxdo/news.js" vertex="1">
+        <mxCell id="n3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="加载 ~/.tap/adapters/example/list.js" vertex="1">
           <mxGeometry height="55" width="220" x="290" y="205" as="geometry" />
         </mxCell>
         <mxCell id="n4" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="pipeline 含&#xa;navigate / evaluate?" vertex="1">

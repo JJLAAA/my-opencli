@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "CLI module boundaries, bundled skill/adapters layout, setup contracts"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Keep implementation minimal, ESM-only, no new dependencies"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "User-facing adapter/schema validation errors should follow fail-fast CLI pattern"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Output schema changes span adapter, executor/output, docs, and skill"}

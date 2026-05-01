@@ -44,6 +44,41 @@ date: '${{ new Date(item.created_at * 1000).toLocaleDateString("zh-CN") }}'
 url: '${{ "https://example.com/item/" + item.id + "?ref=" + args.ref }}'
 ```
 
+## output.fields schema 写法
+
+每个最终输出字段都必须先在 `output.fields` 中声明，再在 `map` 中产出同名 key。
+
+```js
+output: {
+  type: 'list',
+  itemName: 'topic',
+  fields: {
+    title: {
+      type: 'string',
+      description: 'Topic title.',
+      source: 'topic_list.topics[].title',
+      examples: ['A sample title'],
+    },
+    replyCount: {
+      type: 'integer',
+      description: 'Number of replies in the topic.',
+      unit: 'replies',
+      source: 'topic_list.topics[].posts_count',
+    },
+  },
+}
+```
+
+字段确认规则：
+
+- 先记录 raw path 和 sample，再决定最终 output field 名称
+- `description` 写业务含义，不写“title field”这类空泛说明
+- 数字字段优先用带单位的名称和 `unit`，如 `viewCount`
+- 时间字段写 `format`，如 `iso8601`、`unix-seconds`、`date`
+- URL 字段写 `format: 'url'`
+- ID 字段写 `format: 'id'`，并在 description 里说明是哪类 ID
+- 含义不确定时不要写入最终 schema，先问用户确认
+
 ---
 
 ## select 步骤路径写法

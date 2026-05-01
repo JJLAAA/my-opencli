@@ -23,7 +23,7 @@ export function globalHelp() {
     'Usage: tap <site> <command> [--key value] [--format json|table]',
     '       tap help [site] [command]',
     '',
-    'Default output is JSON for agent-friendly parsing. Use --format table for human-readable output.',
+    'Default output is a JSON envelope with meta, schema, and items. Use --format table for human-readable output.',
     '',
     sectionTitle('Commands'),
     '  help              Show global, site, or command help',
@@ -49,7 +49,7 @@ export function siteHelp(site, commands) {
     `Usage: tap ${site} <command> [--key value] [--format json|table]`,
     `       tap help ${site} <command>`,
     '',
-    'Default output is JSON. Use --format table for human-readable output.',
+    'Default output is a JSON envelope with meta, schema, and items. Use --format table for human-readable output.',
     '',
     sectionTitle(`Commands for ${site}`),
   ];
@@ -67,7 +67,7 @@ export function commandHelp(site, command, adapter) {
 
   if (adapter.description) lines.push('', adapter.description);
 
-  lines.push('', 'Default output is JSON. Use --format table for human-readable output.');
+  lines.push('', 'Default output is a JSON envelope with meta, schema, and items. Use --format table for human-readable output.');
 
   if (args.length) {
     lines.push('', sectionTitle('Options'));
@@ -76,6 +76,14 @@ export function commandHelp(site, command, adapter) {
 
   if (adapter.columns?.length) {
     lines.push('', sectionTitle('Output Columns'), `  ${adapter.columns.join(', ')}`);
+  }
+
+  if (adapter.output?.fields) {
+    lines.push('', sectionTitle('Output Schema'));
+    for (const [name, field] of Object.entries(adapter.output.fields)) {
+      const details = [field.type, field.description].filter(Boolean).join(' - ');
+      lines.push(`  ${name}${details ? `: ${details}` : ''}`);
+    }
   }
 
   return lines.join('\n');

@@ -34,7 +34,7 @@ export function setupHelp() {
     'Initializes local TAP files explicitly.',
     '',
     'Options:',
-    '  --force            Overwrite config and bundled adapters',
+    '  --force            Overwrite config and bundled adapters when present',
     '',
     'Creates:',
     '  ~/.tap/',
@@ -47,16 +47,15 @@ export function setupHelp() {
 export function runSetup(options = {}) {
   const force = Boolean(options.force);
   const adaptersSource = findBuiltinAdaptersDir();
-  if (!adaptersSource || !isDirectory(adaptersSource)) {
-    throw new Error('Bundled adapters not found.');
-  }
 
   mkdirSync(tapDir(), { recursive: true });
   mkdirSync(userAdaptersDir(), { recursive: true });
   mkdirSync(logsDir(), { recursive: true });
 
   const config = writeDefaultConfig({ force });
-  const adapters = copyDir(adaptersSource, userAdaptersDir(), { force });
+  const adapters = adaptersSource && isDirectory(adaptersSource)
+    ? copyDir(adaptersSource, userAdaptersDir(), { force })
+    : { installed: [], skipped: [] };
 
   return {
     directories: [tapDir(), userAdaptersDir(), logsDir()],

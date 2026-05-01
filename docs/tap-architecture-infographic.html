@@ -465,9 +465,9 @@
             <span class="arrow">→</span>
             <div class="step">args</div>
             <span class="arrow">→</span>
-            <div class="step">pipeline</div>
+            <div class="step">output.fields</div>
             <span class="arrow">→</span>
-            <div class="step">columns</div>
+            <div class="step">pipeline</div>
           </div>
           <p class="row">pipeline 用 <code>fetch</code>、<code>navigate</code>、<code>intercept</code>、<code>select</code>、<code>map</code>、<code>limit</code> 等步骤描述执行。</p>
         </div>
@@ -475,7 +475,7 @@
           <h3><span class="mini-icon">L</span>加载优先级</h3>
           <p class="row ok"><code>TAP_ADAPTERS_DIR</code> 自定义目录优先，用于项目私有命令。</p>
           <p class="row ok"><code>~/.tap/adapters</code> 用户适配器覆盖内置适配器。</p>
-          <p class="row"><code>adapters/</code> 内置示例提供默认能力。</p>
+          <p class="row"><code>adapters/</code> 可放置可选内置适配器。</p>
         </div>
       </div>
     </section>
@@ -508,8 +508,8 @@
         </div>
         <div class="card">
           <h3><span class="mini-icon">3</span>结构化输出</h3>
-          <p class="row ok">默认 JSON 面向 Agent 解析，table 面向人工查看。</p>
-          <p class="row warn">输出列由 adapter 的 <code>columns</code> 固定，减少后处理不确定性。</p>
+          <p class="row ok">默认 JSON 输出 <code>meta/schema/items</code> envelope，table 面向人工查看。</p>
+          <p class="row warn">JSON 字段由 adapter 的 <code>output.fields</code> 固定，减少后处理不确定性。</p>
         </div>
       </div>
     </section>
@@ -583,14 +583,14 @@
         <span class="num">1</span>
         <h3>Agent 入口</h3>
         <p>调用 CLI，而不是直接操作网页或散装 HTTP 请求。</p>
-        <div class="codebox">tap linuxdo news --limit 5 --format json</div>
+        <div class="codebox">tap example list --limit 5 --format json</div>
       </div>
       <div class="note" style="--note:#5b36c9;">
         <span class="num">2</span>
         <h3>适配器契约</h3>
-        <p>把命令参数、pipeline 和输出列固定成可维护文件。</p>
+        <p>把命令参数、schema 和 pipeline 固定成可维护文件。</p>
         <div class="codebox">export default {
-  args, pipeline, columns
+  args, output, pipeline
 }</div>
       </div>
       <div class="note" style="--note:#c76212;">
@@ -602,8 +602,8 @@
       <div class="note" style="--note:#0f766e;">
         <span class="num">4</span>
         <h3>结果消费</h3>
-        <p>返回 JSON 或表格，便于 Agent 后续摘要、对比和决策。</p>
-        <div class="codebox">printOutput(data, format, columns)</div>
+        <p>返回 schema-aware JSON 或表格，便于 Agent 后续摘要、对比和决策。</p>
+        <div class="codebox">printOutput(data, format, options)</div>
       </div>
     </section>
   </main>

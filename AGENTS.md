@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-`bin/cli.js` is the Bun entrypoint for the `tap` CLI. Core runtime modules live in `src/` (`cdp.js`, `executor.js`, `output.js`). Site-specific commands live in `adapters/<site>/<command>.js`; current examples include `adapters/linuxdo/news.js` and `adapters/bilibili/hot.js`. Design notes and diagrams live in `docs/`. Trellis workflow state, specs, and task history live under `.trellis/`; treat those files as part of the contributor workflow, not application runtime.
+`bin/cli.js` is the Bun entrypoint for the `tap` CLI. Core runtime modules live in `src/` (`cdp.js`, `executor.js`, `output.js`). Site-specific commands live in `adapters/<site>/<command>.js` or user-owned adapter directories; adapters intended for JSON output must declare `output.fields`. Design notes and diagrams live in `docs/`. Trellis workflow state, specs, and task history live under `.trellis/`; treat those files as part of the contributor workflow, not application runtime.
 
 ## Build, Test, and Development Commands
 
@@ -15,7 +15,7 @@ bun run build
 Builds a standalone `tap` executable from `bin/cli.js`.
 
 ```bash
-bun run bin/cli.js linuxdo news --limit 3
+bun run bin/cli.js <site> <command> --limit 3
 ```
 
 Runs the CLI directly during development. If you want adapters from a custom location, set `TAP_ADAPTERS_DIR=/path/to/adapters`.
@@ -28,7 +28,7 @@ This repo uses ESM JavaScript with explicit `import`/`export`, semicolons, and c
 
 ## Testing Guidelines
 
-No automated test suite is committed yet. For now, validate changes by running the affected command locally and checking both table and JSON output when relevant. For adapter work, include a concrete manual example in your PR, such as `bun run bin/cli.js linuxdo news --limit 5 --format json`.
+No automated test suite is committed yet. For now, validate changes by running the affected command locally and checking both table and JSON output when relevant. For adapter work, include a concrete manual example in your PR, such as `bun run bin/cli.js <site> <command> --limit 5 --format json`, and confirm the JSON envelope includes `meta`, `schema`, and `items`.
 
 ## Commit & Pull Request Guidelines
 

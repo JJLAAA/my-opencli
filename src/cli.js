@@ -2,7 +2,7 @@ import { openSession, closeTab } from './cdp.js';
 import { listAdapters, loadAdapter } from './adapters.js';
 import { executePipeline } from './executor.js';
 import { commandHelp, globalHelp, siteHelp } from './help.js';
-import { printOutput } from './output.js';
+import { printOutput, validateJsonOutputSchema } from './output.js';
 import { installSkill, skillHelp } from './skills.js';
 import { formatSetupResult, runSetup, setupHelp } from './setup.js';
 import {
@@ -206,6 +206,14 @@ export async function runCli(argv = process.argv.slice(2)) {
   for (const def of adapter.args ?? [])
     if (args[def.name] === undefined) args[def.name] = def.default;
 
+  if (format === 'json') {
+    try {
+      validateJsonOutputSchema(adapter, { site, command });
+    } catch (error) {
+      fail(error.message);
+    }
+  }
+
   const needsBrowser = adapter.pipeline.some(step =>
     'navigate' in step || 'evaluate' in step || 'intercept' in step
   );
@@ -214,7 +222,13 @@ export async function runCli(argv = process.argv.slice(2)) {
   try {
     if (needsBrowser) ({ session, targetId, base } = await openSession());
     const result = await executePipeline(adapter.pipeline, args, session);
-    printOutput(result, format, adapter.columns);
+    printOutput(result, format, {
+      site,
+      command,
+      args,
+      adapter,
+      columns: adapter.columns,
+    });
   } finally {
     session?.close();
     if (targetId) await closeTab(base, targetId);

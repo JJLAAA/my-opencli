@@ -18,8 +18,8 @@ bun run bin/cli.js <site> <command>  # run directly during development
 
 No test/lint/format scripts exist yet. Validate changes by running the affected command and checking both output formats:
 ```bash
-bun run bin/cli.js bilibili hot --limit 5 --format table
-bun run bin/cli.js bilibili hot --limit 5 --format json
+bun run bin/cli.js <site> <command> --limit 5 --format table
+bun run bin/cli.js <site> <command> --limit 5 --format json
 ```
 
 ## Architecture
@@ -32,7 +32,7 @@ bun run bin/cli.js bilibili hot --limit 5 --format json
 - **`src/executor.js`** — Pipeline execution engine. `executePipeline(steps, args, session)` runs steps sequentially, threading `data` through. Template expressions use `${{ expr }}` syntax with context vars: `item`, `index`, `args`, `data`, `root`.
 - **`src/cdp.js`** — Chrome DevTools Protocol wrapper. `CDPSession` class + `openSession()`/`closeTab()`. Manages WebSocket communication, page navigation, JS evaluation, and network interception (patches `fetch` and `XMLHttpRequest` in-page).
 - **`src/adapters.js`** — Adapter discovery and loading. `resolveAdapterPath()` searches directories in priority order (see below). `listAdapters()` scans all directories and deduplicates by site/command.
-- **`src/output.js`** — `printOutput()` renders data as JSON or ASCII table.
+- **`src/output.js`** — `printOutput()` renders schema-aware JSON envelopes or ASCII tables.
 - **`src/help.js`** — Generates help text at global, site, and command levels.
 
 ### Adapter Resolution (Search Order)
@@ -48,10 +48,20 @@ User adapters override built-ins when both exist for the same site/command.
 export default {
   description: 'Short description shown in help.',
   args: [{ name: 'limit', default: 20, description: 'Max items.' }],
+  output: {
+    type: 'list',
+    itemName: 'item',
+    fields: {
+      field1: { type: 'string', description: 'First output field.' },
+      field2: { type: 'string', description: 'Second output field.' },
+    },
+  },
   columns: ['field1', 'field2'],  // table column order
   pipeline: [ /* ordered array of steps */ ],
 };
 ```
+
+`--format json` requires `output.fields` and emits `{ meta, schema, items }`. JSON items are projected to declared schema fields only; undeclared pipeline fields are dropped.
 
 ### Pipeline Steps
 Each step is `{ <op>: <params> }`. Steps execute sequentially, threading `data`:
@@ -74,7 +84,7 @@ CLI Args → listAdapters() → loadAdapter(site, cmd)
          → needsBrowser check (navigate|evaluate|intercept in pipeline)
          → if browser: openSession() → new CDP tab
          → executePipeline(steps, args, session)
-         → printOutput(data, format, columns)
+         → printOutput(data, format, { adapter, site, command, args })
          → closeTab()
 ```
 
