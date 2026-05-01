@@ -433,3 +433,36 @@ Moved bundled tap-adapter-author skill into TAP-owned skills/ layout, updated sk
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: Schema-aware JSON output
+
+**Date**: 2026-05-01
+**Task**: Schema-aware JSON output
+**Branch**: `main`
+
+### Summary
+
+Implemented schema-aware JSON envelopes for TAP output, required explicit adapter output.fields, removed old built-in adapters, updated tap-adapter-author schema confirmation workflow, and synchronized docs/specs.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `db6fa38` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
