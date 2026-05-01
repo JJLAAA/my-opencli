@@ -466,3 +466,36 @@ Implemented schema-aware JSON envelopes for TAP output, required explicit adapte
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: JSON-only output and argument validation
+
+**Date**: 2026-05-02
+**Task**: JSON-only output and argument validation
+**Branch**: `main`
+
+### Summary
+
+Removed public table output support, made JSON the only CLI output format, added required adapter argument validation, and updated TAP docs/help text.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cd5fef4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
