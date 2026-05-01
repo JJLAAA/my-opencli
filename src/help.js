@@ -20,10 +20,10 @@ function sectionTitle(text) {
 export function globalHelp() {
   const adapters = listAdapters();
   const lines = [
-    'Usage: tap <site> <command> [--key value] [--format json|table]',
+    'Usage: tap <site> <command> [--key value] [--format json]',
     '       tap help [site] [command]',
     '',
-    'Default output is a JSON envelope with meta, schema, and items. Use --format table for human-readable output.',
+    'Output is a JSON envelope with meta, schema, and items. JSON is the only supported format.',
     '',
     sectionTitle('Commands'),
     '  help              Show global, site, or command help',
@@ -46,10 +46,10 @@ export function globalHelp() {
 
 export function siteHelp(site, commands) {
   const lines = [
-    `Usage: tap ${site} <command> [--key value] [--format json|table]`,
+    `Usage: tap ${site} <command> [--key value] [--format json]`,
     `       tap help ${site} <command>`,
     '',
-    'Default output is a JSON envelope with meta, schema, and items. Use --format table for human-readable output.',
+    'Output is a JSON envelope with meta, schema, and items. JSON is the only supported format.',
     '',
     sectionTitle(`Commands for ${site}`),
   ];
@@ -62,20 +62,16 @@ export function commandHelp(site, command, adapter) {
   const args = adapter.args ?? [];
   const usageSuffix = args.map(formatArgUsage).join('');
   const lines = [
-    `Usage: tap ${site} ${command}${usageSuffix} [--format json|table]`,
+    `Usage: tap ${site} ${command}${usageSuffix} [--format json]`,
   ];
 
   if (adapter.description) lines.push('', adapter.description);
 
-  lines.push('', 'Default output is a JSON envelope with meta, schema, and items. Use --format table for human-readable output.');
+  lines.push('', 'Output is a JSON envelope with meta, schema, and items. JSON is the only supported format.');
 
   if (args.length) {
     lines.push('', sectionTitle('Options'));
     for (const arg of args) lines.push(formatOptionLine(arg));
-  }
-
-  if (adapter.columns?.length) {
-    lines.push('', sectionTitle('Output Columns'), `  ${adapter.columns.join(', ')}`);
   }
 
   if (adapter.output?.fields) {

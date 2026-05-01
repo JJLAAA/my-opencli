@@ -3,7 +3,7 @@
 一个轻量级 CLI 工具，用于执行声明式数据管道，从 Web 数据源抓取并转换数据。
 
 ```
-tap <site> <command> [--key value] [--format json|table]
+tap <site> <command> [--key value] [--format json]
 ```
 
 > TAP 是 [opencli](https://github.com/jackwener/opencli) 的轻量版本。核心区别是浏览器隔离：TAP 将 Chrome 视为专供 Agent 使用的操作平台，而不是通过 daemon + extension 控制用户日常使用的 Chrome。
@@ -107,7 +107,6 @@ tap example list --help
 # 执行命令
 tap example list
 tap example list --limit 10
-tap example list --format table
 ```
 
 ### 输出格式
@@ -115,7 +114,6 @@ tap example list --format table
 | 参数 | 说明 |
 |------|------|
 | _（默认）_ / `--format json` | 包含 `meta`、`schema`、`items` 的 JSON envelope，便于 Agent 解析 |
-| `--format table` | ASCII 表格，便于人工阅读 |
 
 ---
 
@@ -170,7 +168,6 @@ export default {
       },
     },
   },
-  columns: ['rank', 'title'],
   pipeline: [ /* 步骤数组 */ ],
 };
 ```
@@ -180,7 +177,6 @@ export default {
 | `description` | 否 | 在 `tap help <site> <command>` 中显示 |
 | `args` | 否 | CLI 参数，支持默认值和说明 |
 | `output.fields` | JSON 输出必填 | 机器可读字段契约，用于生成 JSON schema |
-| `columns` | 否 | 表格列名顺序，必须与 map 步骤输出的 key 对应 |
 | `pipeline` | 是 | 有序的步骤数组 |
 
 ### JSON 输出契约
@@ -215,7 +211,7 @@ export default {
 }
 ```
 
-Runtime 不会从 row key 或 `columns` 推断字段含义。JSON 输出要求 adapter 显式声明 `output.fields`，并且 `items` 只包含 schema 声明过的字段。Pipeline 产出的额外字段会从 JSON 输出中丢弃。
+Runtime 不会从 row key 推断字段含义。JSON 输出要求 adapter 显式声明 `output.fields`，并且 `items` 只包含 schema 声明过的字段。Pipeline 产出的额外字段会从 JSON 输出中丢弃。
 
 ### Pipeline 步骤
 
@@ -374,7 +370,6 @@ export default {
       },
     },
   },
-  columns: ['title', 'score'],
   pipeline: [
     { fetch: 'https://api.example.com/top' },
     { select: 'data.list' },
@@ -515,7 +510,6 @@ TAP 默认不再内置具体站点示例适配器。使用 `tap-adapter-author` 
 
 ```bash
 tap example list --limit 5 --format json
-tap example list --limit 5 --format table
 ```
 
 ---

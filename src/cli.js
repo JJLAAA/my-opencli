@@ -38,6 +38,19 @@ function parseArgs(rest) {
   return args;
 }
 
+function isMissingArgValue(value) {
+  return value === undefined || value === true || value === '';
+}
+
+function validateRequiredArgs(adapter, args) {
+  const missing = (adapter.args ?? [])
+    .filter(def => def.required && isMissingArgValue(args[def.name]))
+    .map(def => `--${def.name}`);
+
+  if (!missing.length) return;
+  throw new Error(`Missing required argument${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`);
+}
+
 function parseSkillInstallArgs(rest) {
   const [provider, ...flags] = rest;
   const options = {};
@@ -201,10 +214,16 @@ export async function runCli(argv = process.argv.slice(2)) {
   const args = parseArgs(rest);
   const format = args.format ?? 'json';
   delete args.format;
+  if (format !== 'json') fail(`Unknown format: ${format}. Expected json.`);
 
   const { adapter } = loaded;
   for (const def of adapter.args ?? [])
     if (args[def.name] === undefined) args[def.name] = def.default;
+  try {
+    validateRequiredArgs(adapter, args);
+  } catch (error) {
+    fail(`${error.message}\n\n${commandHelp(site, command, adapter)}`);
+  }
 
   if (format === 'json') {
     try {
@@ -227,7 +246,6 @@ export async function runCli(argv = process.argv.slice(2)) {
       command,
       args,
       adapter,
-      columns: adapter.columns,
     });
   } finally {
     session?.close();

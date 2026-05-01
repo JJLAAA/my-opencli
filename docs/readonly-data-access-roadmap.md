@@ -7,7 +7,7 @@ TAP 的长期定位不是替代正式 API，也不是通用自动化脚本框架
 它把已有业务系统中的数据查询能力封装成稳定、结构化、可组合的 CLI 命令：
 
 ```bash
-tap <domain> <command> [--key value] [--format json|table]
+tap <domain> <command> [--key value] [--format json]
 ```
 
 对 Agent 来说，TAP 提供的是业务语义明确的工具入口，而不是要求 Agent 临时理解网页路径、内部接口、登录态、字段结构和筛选逻辑。
@@ -78,7 +78,7 @@ tap ads daily-report --date 2026-05-01
 - DOM 数据提取：`evaluate`
 - 结构化整理：`select`、`map`、`filter`、`sort`、`limit`
 
-这一阶段的重点是让网页和 HTTP 后台能力稳定变成 JSON/table 输出。
+这一阶段的重点是让网页和 HTTP 后台能力稳定变成 JSON 输出。
 
 ### 第二阶段：增加只读数据源 provider
 
@@ -151,7 +151,7 @@ TAP 的只读安全模型应包含三层。
 - adapter 文件声明命令参数、`output.fields` 输出契约和 pipeline
 - `executePipeline` 顺序执行 step
 - step 之间通过 `data` 传递结构化结果
-- 输出统一走 JSON/table
+- 输出统一走 JSON
 - 浏览器能力已经按需打开和关闭会话
 
 因此，增加数据源的主要改造点是：

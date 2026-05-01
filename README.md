@@ -9,7 +9,7 @@ A lightweight CLI tool for executing declarative data pipelines that fetch and t
 *[中文文档](README.zh.md)*
 
 ```
-tap <site> <command> [--key value] [--format json|table]
+tap <site> <command> [--key value] [--format json]
 ```
 
 ## How It Works
@@ -103,15 +103,13 @@ tap example list --help
 # Run a command
 tap example list
 tap example list --limit 10
-tap example list --format table
 ```
 
-### Output Formats
+### Output Format
 
 | Flag | Description |
 |------|-------------|
 | _(default)_ / `--format json` | JSON envelope with `meta`, `schema`, and `items` for agent-friendly parsing |
-| `--format table` | ASCII table for human-readable output |
 
 ---
 
@@ -166,7 +164,6 @@ export default {
       },
     },
   },
-  columns: ['rank', 'title'],
   pipeline: [ /* steps */ ],
 };
 ```
@@ -176,7 +173,6 @@ export default {
 | `description` | No | Shown in `tap help <site> <command>` |
 | `args` | No | CLI params with defaults and descriptions |
 | `output.fields` | Yes for JSON output | Machine-readable field contract used to build the JSON schema |
-| `columns` | No | Table column order; must match map output keys |
 | `pipeline` | Yes | Ordered array of steps |
 
 ### JSON Output Contract
@@ -211,7 +207,7 @@ export default {
 }
 ```
 
-The runtime does not infer field meaning from row keys or `columns`. JSON output requires explicit `output.fields`, and `items` only includes fields declared there. Extra fields produced by the pipeline are dropped from JSON output.
+The runtime does not infer field meaning from row keys. JSON output requires explicit `output.fields`, and `items` only includes fields declared there. Extra fields produced by the pipeline are dropped from JSON output.
 
 ### Pipeline Steps
 
@@ -370,7 +366,6 @@ export default {
       },
     },
   },
-  columns: ['title', 'score'],
   pipeline: [
     { fetch: 'https://api.example.com/top' },
     { select: 'data.list' },
@@ -528,7 +523,6 @@ TAP no longer ships site-specific example adapters by default. Use `tap-adapter-
 
 ```bash
 tap example list --limit 5 --format json
-tap example list --limit 5 --format table
 ```
 
 ---
@@ -544,7 +538,7 @@ tap/
 │   ├── cdp.js              # Chrome DevTools Protocol session
 │   ├── adapters.js         # Adapter discovery and loading
 │   ├── help.js             # Help text generation
-│   └── output.js           # Table / JSON formatter
+│   └── output.js           # JSON formatter
 ├── adapters/               # Optional built-in adapters
 └── skills/                 # Bundled assistant skills
     └── tap-adapter-author/
