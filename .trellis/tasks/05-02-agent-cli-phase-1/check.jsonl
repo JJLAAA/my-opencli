@@ -1,0 +1,8 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": "src/cli.js", "reason": "Verify error codes, JSON error output, exit codes"}
+{"file": "src/output.js", "reason": "Verify error envelope format"}
+{"file": "src/doctor.js", "reason": "Verify JSON output shape"}
+{"file": "src/browser.js", "reason": "Verify JSON output shape"}
+{"file": "src/setup.js", "reason": "Verify JSON output shape"}
+{"file": ".trellis/tasks/05-02-agent-cli-phase-1/prd.md", "reason": "Verify acceptance criteria met"}

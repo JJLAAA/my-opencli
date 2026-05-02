@@ -117,6 +117,58 @@ tap example list --limit 10
 |------|-------------|
 | _(default)_ / `--format json` | JSON envelope with `meta`, `schema`, and `items` for agent-friendly parsing |
 
+All commands accept `--format json`. For data commands this is the default. Management commands (`doctor`, `browser`, `setup`) output human-readable text by default and switch to JSON when `--format json` is given.
+
+### Exit Codes
+
+| Code | Name | Meaning | Agent Response |
+|------|------|---------|----------------|
+| 0 | success | Command completed | Parse stdout |
+| 1 | general_error | Unexpected failure | Inspect error; usually stop |
+| 2 | usage_error | Bad invocation, unknown option, missing required arg, unsupported format | Fix command |
+| 3 | config_error | Missing or invalid TAP setup | Run `tap setup` |
+| 4 | browser_error | Chrome/CDP unavailable | Run `tap browser status` / `tap browser start` |
+| 5 | upstream_error | Network or remote API failure | Retry if `retryable: true` |
+| 6 | adapter_contract_error | Adapter schema invalid | Fix adapter |
+
+### Structured Errors
+
+When `--format json` is set, CLI failures produce a JSON error on stderr:
+
+```json
+{
+  "error": {
+    "code": "missing_required_arg",
+    "message": "Missing required argument: --subreddit",
+    "suggestion": "Run: tap reddit hot --help",
+    "retryable": false,
+    "details": {}
+  }
+}
+```
+
+### JSON Management Commands
+
+```bash
+# Diagnostics
+tap doctor --format json
+# → { "ok": true, "checks": [...], "suggestions": [] }
+
+# Browser lifecycle
+tap browser status --format json
+# → { "ok": true, "endpoint": "...", "browser": "Chrome/..." }
+
+tap browser start --format json
+# → { "alreadyRunning": false, "endpoint": "...", "chrome": "...", "profile": "..." }
+
+tap browser stop --format json
+# → { "stopped": true, "endpoint": "..." }
+
+# Setup
+tap setup --format json
+# → { "directories": [...], "config": { "path": "...", "written": true }, ... }
+```
+
 ---
 
 ## Environment Variables

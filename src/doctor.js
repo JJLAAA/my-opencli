@@ -72,10 +72,17 @@ export async function runDoctor() {
     cdp.ok ? `${cdp.endpoint} (${cdp.browser})` : `${cdp.endpoint}: ${cdp.error}`
   ));
 
-  return {
-    ok: checks.every(item => item.ok),
-    checks,
-  };
+  const ok = checks.every(item => item.ok);
+  const suggestions = [];
+  if (!ok) {
+    const failed = checks.filter(c => !c.ok);
+    if (failed.some(c => /directory|config|tap|adapter|bundled/i.test(c.label)))
+      suggestions.push('tap setup');
+    if (failed.some(c => /chrome|cdp/i.test(c.label)))
+      suggestions.push('tap browser start');
+  }
+
+  return { ok, checks, suggestions };
 }
 
 export function formatDoctorResult(result) {
@@ -85,7 +92,7 @@ export function formatDoctorResult(result) {
   });
 
   if (!result.ok) {
-    lines.push('', 'Suggested next steps:', '  tap setup', '  tap browser start');
+    lines.push('', 'Suggested next steps:', ...result.suggestions.map(s => `  ${s}`));
   }
 
   return lines.join('\n');

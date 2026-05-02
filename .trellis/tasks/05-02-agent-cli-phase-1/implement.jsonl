@@ -1,0 +1,10 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": "src/cli.js", "reason": "Main file: fail(), arg parsing, exit codes, management command dispatch"}
+{"file": "src/output.js", "reason": "Error envelope helper and JSON formatting"}
+{"file": "src/doctor.js", "reason": "JSON output for doctor command"}
+{"file": "src/browser.js", "reason": "JSON output for browser commands"}
+{"file": "src/setup.js", "reason": "JSON output for setup command"}
+{"file": "src/executor.js", "reason": "Error handling in pipeline execution"}
+{"file": "src/adapters.js", "reason": "Adapter loading error patterns"}
+{"file": "bin/cli.js", "reason": "Top-level error handler"}

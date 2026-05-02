@@ -6,78 +6,141 @@
 
 ## Overview
 
-Errors fall into two categories:
-1. **User errors** (bad args, missing adapter) — print to stderr + `process.exit(1)`
-2. **Runtime errors** (CDP failure, network, evaluate exception) — propagate naturally, cleaned up in `finally`
+Errors are classified into exit codes and output structured JSON when `--format json` is set. All error output goes to stderr; successful output goes to stdout.
 
 ---
 
-## Error Handling Patterns
+## Exit Codes
 
-### User errors — fail fast with a message
+| Code | Name | Constant | When |
+|------|------|----------|------|
+| 0 | success | — | Command completed |
+| 1 | general_error | — | Unexpected failure |
+| 2 | usage_error | `EXIT_USAGE` | Bad invocation, unknown option, missing arg, unsupported format |
+| 3 | config_error | `EXIT_CONFIG` | Missing/invalid TAP setup |
+| 4 | browser_error | `EXIT_BROWSER` | Chrome/CDP unavailable |
+| 5 | upstream_error | `EXIT_UPSTREAM` | Network or remote API failure |
+| 6 | adapter_contract_error | `EXIT_ADAPTER` | Invalid adapter output schema |
+
+---
+
+## `fail()` — Structured Error Exit
 
 ```js
-// bin/cli.js
-if (!site || !command) {
-  console.error('Usage: tap <site> <command> [--key value] [--format table|json]');
-  process.exit(1);
-}
-
-if (!existsSync(adapterPath)) {
-  console.error(`Adapter not found: ${adapterPath}`);
-  process.exit(1);
-}
+// src/cli.js
+function fail(message, { code, exitCode, suggestion, retryable, details } = {})
 ```
 
-### Runtime errors — try/finally for cleanup, let errors bubble
+- When `_jsonMode` is true: outputs `{ error: { code, message, suggestion, retryable, details } }` as JSON to stderr.
+- When `_jsonMode` is false: outputs plain `message` to stderr.
+- Always calls `process.exit(exitCode)`.
+
+### Error code naming
+
+Use `snake_case` identifiers: `unknown_site`, `missing_required_arg`, `unsupported_format`, `adapter_contract_error`, `cdp_unreachable`, `upstream_error`, `browser_error`.
+
+---
+
+## `--format` Detection
+
+`--format` is detected and stripped from argv globally in `runCli()` before any command dispatch. This ensures that even early errors (unknown site, unsupported format) respect JSON mode:
+
+```js
+const rawFormat = peekFormat(argv);
+_jsonMode = rawFormat !== null;
+```
+
+When `--format` is present with any value, `_jsonMode` is set to `true` *before* validation. This means `--format yaml` still produces a structured JSON error (with `code: unsupported_format`) rather than plain text.
+
+---
+
+## Error Patterns by Category
+
+### Usage errors (exit 2)
+
+All argument parsing, unknown commands/sites, and unsupported formats. These are non-retryable.
+
+```js
+fail(`Unknown site: ${site}`, { code: 'unknown_site', exitCode: EXIT_USAGE });
+fail(`Unsupported format: ${fmt}`, {
+  code: 'unsupported_format', exitCode: EXIT_USAGE,
+  suggestion: 'Use --format json or omit --format for human-readable text.',
+  details: { format: fmt, supported: ['json'] },
+});
+```
+
+### Config errors (exit 3)
+
+Setup failures, missing directories, invalid config.
+
+```js
+fail(error.message, { code: 'setup_error', exitCode: EXIT_CONFIG });
+```
+
+### Browser errors (exit 4)
+
+CDP unreachable, Chrome not found. Include a suggestion to start the browser.
+
+```js
+fail(error.message, { code: 'cdp_unreachable', exitCode: EXIT_BROWSER, suggestion: 'Run: tap browser start' });
+```
+
+### Upstream errors (exit 5)
+
+Network failures, remote API errors. These are retryable.
+
+```js
+fail(error.message, { code: 'upstream_error', exitCode: EXIT_UPSTREAM, retryable: true });
+```
+
+### Adapter contract errors (exit 6)
+
+Missing `output.fields`, invalid schema. Non-retryable — requires adapter fix.
+
+```js
+fail(error.message, { code: 'adapter_contract_error', exitCode: EXIT_ADAPTER });
+```
+
+---
+
+## Top-Level Error Handler
+
+`bin/cli.js` wraps `runCli()` in a try/catch for truly unexpected errors (bugs). These always exit 1 with `code: internal_error` in JSON mode.
 
 ```js
 // bin/cli.js
 try {
-  if (needsBrowser) ({ session, targetId, base } = await openSession());
-  const result = await executePipeline(adapter.pipeline, args, session);
-  printOutput(result, format, { adapter, site, command, args });
-} finally {
-  session?.close();
-  if (targetId) await closeTab(base, targetId);
+  await runCli();
+} catch (error) {
+  if (isJsonMode()) {
+    console.error(JSON.stringify({ error: { code: 'internal_error', message: error.message, ... } }));
+  } else {
+    console.error(error.message || error);
+  }
+  process.exit(1);
 }
 ```
-
-### CDP evaluate errors — throw with description
-
-```js
-// src/cdp.js
-if (result.exceptionDetails) {
-  throw new Error(result.exceptionDetails.exception?.description ?? 'Evaluation failed');
-}
-```
-
-### Unknown pipeline ops — throw immediately
-
-```js
-// src/executor.js
-throw new Error(`Unknown pipeline step: "${op}"`);
-```
-
-### Invalid JSON output schema — fail fast
-
-`--format json` requires adapters to declare `output.fields`. Missing or malformed schema is a user-facing adapter authoring error and should fail with an actionable message:
-
-```js
-throw new Error('Adapter "site command" must define output.fields for JSON output.');
-```
-
-Do not infer field meaning from `columns` or output rows as a fallback. Schema meaning belongs in the adapter contract.
 
 ---
 
-## closeTab is fire-and-forget
+## Pipeline Error Handling
 
-`closeTab` swallows its own errors — tab cleanup should never crash the process:
+Pipeline errors from `executePipeline` are caught in `runCli()` and classified:
+
+- Errors mentioning CDP/Chrome/browser/WebSocket → exit 4 (browser error)
+- All others → exit 5 (upstream error, retryable)
 
 ```js
-export async function closeTab(base, targetId) {
-  try { await httpRequest(`${base}/json/close/${targetId}`, 'GET'); } catch {}
+} catch (error) {
+  const isBrowserError = /cdp|chrome|browser|devtools|websocket/i.test(error.message);
+  fail(error.message, {
+    code: isBrowserError ? 'browser_error' : 'upstream_error',
+    exitCode: isBrowserError ? EXIT_BROWSER : EXIT_UPSTREAM,
+    retryable: !isBrowserError,
+  });
+} finally {
+  session?.close();
+  if (targetId) await closeTab(base, targetId);
 }
 ```
 
@@ -85,7 +148,8 @@ export async function closeTab(base, targetId) {
 
 ## Common Mistakes
 
-- **Don't catch errors in executor/cdp** unless you can recover. Let them propagate to the `finally` in `bin/cli.js` so cleanup always runs.
-- **Don't throw from `closeTab`** — it's a best-effort cleanup.
-- **Don't add fallback data** (empty arrays, null returns) when a step genuinely failed. Fail loudly.
-- **Don't invent schema** from row keys or table columns. Fail loudly when JSON output lacks explicit `output.fields`.
+- **Don't use `process.exit()` directly** — use `fail()` so JSON mode is respected.
+- **Don't skip the `code` field** in `fail()` — every call site should specify a stable error code.
+- **Don't catch errors in executor/cdp** unless you can recover. Let them propagate to the catch block in `runCli()`.
+- **Don't throw from `closeTab`** — it's a best-effort cleanup (fire-and-forget).
+- **Don't add fallback data** when a step genuinely failed. Fail loudly.

@@ -121,6 +121,58 @@ tap example list --limit 10
 |------|------|
 | _（默认）_ / `--format json` | 包含 `meta`、`schema`、`items` 的 JSON envelope，便于 Agent 解析 |
 
+所有命令均支持 `--format json`。数据命令默认使用 JSON。管理命令（`doctor`、`browser`、`setup`）默认输出人类可读文本，指定 `--format json` 时切换为 JSON。
+
+### 退出码
+
+| 码 | 名称 | 含义 | Agent 应对 |
+|----|------|------|------------|
+| 0 | success | 命令成功 | 解析 stdout |
+| 1 | general_error | 意外错误 | 检查错误，通常应停止 |
+| 2 | usage_error | 调用错误、未知选项、缺少必需参数、不支持的格式 | 修正命令 |
+| 3 | config_error | TAP 配置缺失或无效 | 运行 `tap setup` |
+| 4 | browser_error | Chrome/CDP 不可用 | 运行 `tap browser status` / `tap browser start` |
+| 5 | upstream_error | 网络或远程 API 失败 | `retryable: true` 时可重试 |
+| 6 | adapter_contract_error | 适配器 schema 无效 | 修复适配器 |
+
+### 结构化错误
+
+当设置了 `--format json` 时，CLI 失败会在 stderr 输出 JSON 错误：
+
+```json
+{
+  "error": {
+    "code": "missing_required_arg",
+    "message": "Missing required argument: --subreddit",
+    "suggestion": "Run: tap reddit hot --help",
+    "retryable": false,
+    "details": {}
+  }
+}
+```
+
+### 管理命令 JSON 输出
+
+```bash
+# 诊断
+tap doctor --format json
+# → { "ok": true, "checks": [...], "suggestions": [] }
+
+# 浏览器生命周期
+tap browser status --format json
+# → { "ok": true, "endpoint": "...", "browser": "Chrome/..." }
+
+tap browser start --format json
+# → { "alreadyRunning": false, "endpoint": "...", "chrome": "...", "profile": "..." }
+
+tap browser stop --format json
+# → { "stopped": true, "endpoint": "..." }
+
+# 初始化
+tap setup --format json
+# → { "directories": [...], "config": { "path": "...", "written": true }, ... }
+```
+
 ---
 
 ## 环境变量
