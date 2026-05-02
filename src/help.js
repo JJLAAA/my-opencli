@@ -1,16 +1,24 @@
 import { listAdapters } from './adapters.js';
+import { inferType } from './schema.js';
 
 function formatArgUsage(arg) {
+  const type = arg.type ?? inferType(arg);
+  if (type === 'boolean') return arg.required ? ` --${arg.name}` : ` [--${arg.name}]`;
   return arg.required ? ` --${arg.name} <value>` : ` [--${arg.name} value]`;
 }
 
 function formatOptionLine(arg) {
-  const label = `--${arg.name}`;
+  const type = arg.type ?? inferType(arg);
+  const label = arg.enum
+    ? `--${arg.name} <${arg.enum.map(v => JSON.stringify(v)).join('|')}>`
+    : type === 'boolean'
+      ? `--${arg.name}`
+      : `--${arg.name} <${type}>`;
   const details = [];
   if (arg.description) details.push(arg.description);
   if (arg.default !== undefined) details.push(`default: ${JSON.stringify(arg.default)}`);
   if (arg.required) details.push('required');
-  return `  ${label.padEnd(18)}${details.join(' | ')}`.trimEnd();
+  return `  ${label.padEnd(24)}${details.join(' | ')}`.trimEnd();
 }
 
 function sectionTitle(text) {
@@ -27,6 +35,7 @@ export function globalHelp() {
     '',
     sectionTitle('Commands'),
     '  help              Show global, site, or command help',
+    '  schema            Show command schemas (requires --format json)',
     '  setup             Initialize local TAP files explicitly',
     '  browser           Manage the agent Chrome runtime',
     '  doctor            Diagnose local TAP setup',

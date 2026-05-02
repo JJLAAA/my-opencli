@@ -15,6 +15,13 @@ import {
   stopBrowser,
 } from './browser.js';
 import { doctorHelp, formatDoctorResult, runDoctor } from './doctor.js';
+import {
+  buildGlobalSchema,
+  buildAdapterCommandSchema,
+  buildManagementCommandSchema,
+  getManagementCommandNames,
+  inferType,
+} from './schema.js';
 
 // Exit codes
 const EXIT_USAGE = 2;
@@ -255,6 +262,122 @@ async function runDoctorCommand(tokens) {
   process.exit(result.ok ? 0 : classifyDoctorExitCode(result));
 }
 
+async function runSchemaCommand(tokens) {
+  if (tokens.length === 0 || tokens.some(isHelpToken)) {
+    if (!_jsonMode)
+      fail('Schema output requires --format json.', { code: 'unsupported_format', exitCode: EXIT_USAGE });
+    console.log(JSON.stringify(await buildGlobalSchema(), null, 2));
+    process.exit(0);
+  }
+
+  if (!_jsonMode)
+    fail('Schema output requires --format json.', { code: 'unsupported_format', exitCode: EXIT_USAGE });
+
+  const managementNames = getManagementCommandNames();
+
+  // Try management command match: "doctor", "browser status", etc.
+  const twoWord = tokens.length >= 2 ? `${tokens[0]} ${tokens[1]}` : null;
+  if (managementNames.includes(tokens[0]) && tokens.length === 1) {
+    console.log(JSON.stringify(buildManagementCommandSchema(tokens[0]), null, 2));
+    process.exit(0);
+  }
+  if (twoWord && managementNames.includes(twoWord)) {
+    console.log(JSON.stringify(buildManagementCommandSchema(twoWord), null, 2));
+    process.exit(0);
+  }
+
+  // Adapter command: schema <site> <command>
+  const [site, command] = tokens;
+  if (!command)
+    fail(`Missing command. Usage: tap schema <site> <command> --format json`, { code: 'usage_error', exitCode: EXIT_USAGE });
+
+  const loaded = await loadAdapter(site, command);
+  if (!loaded)
+    fail(`Unknown command: ${site} ${command}`, { code: 'unknown_command', exitCode: EXIT_USAGE });
+
+  console.log(JSON.stringify(buildAdapterCommandSchema(site, command, loaded.adapter), null, 2));
+  process.exit(0);
+}
+
+function coerceBool(value) {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+}
+
+function validateAdapterArgs(adapter, args, site, command) {
+  const definedArgs = adapter.args ?? [];
+  const knownNames = new Set(definedArgs.map(def => def.name));
+  knownNames.add('format');
+
+  for (const key of Object.keys(args)) {
+    if (!knownNames.has(key)) {
+      fail(`Unknown option: --${key}`, {
+        code: 'unknown_option', exitCode: EXIT_USAGE,
+        suggestion: `Run: tap ${site} ${command} --help`,
+        details: { arg: key, flag: `--${key}` },
+      });
+    }
+  }
+
+  for (const def of definedArgs) {
+    const raw = args[def.name];
+    if (raw === undefined || raw === null) continue;
+
+    const type = inferType(def);
+    const value = type === 'boolean' ? coerceBool(raw) : raw;
+    args[def.name] = value;
+
+    if (type === 'boolean' && typeof value !== 'boolean') {
+      fail(`Invalid value for --${def.name}: expected boolean.`, {
+        code: 'invalid_arg_type', exitCode: EXIT_USAGE,
+        suggestion: `Use --${def.name}, --${def.name} true, or --${def.name} false.`,
+        details: { arg: def.name, flag: `--${def.name}`, expected: 'boolean', received: raw },
+      });
+    }
+
+    if (type === 'integer') {
+      if (typeof value !== 'number' || !Number.isInteger(value)) {
+        fail(`Invalid value for --${def.name}: expected integer.`, {
+          code: 'invalid_arg_type', exitCode: EXIT_USAGE,
+          suggestion: `Use --${def.name} with an integer value, for example: --${def.name} 10.`,
+          details: { arg: def.name, flag: `--${def.name}`, expected: 'integer', received: raw },
+        });
+      }
+    } else if (type === 'number') {
+      if (typeof value !== 'number') {
+        fail(`Invalid value for --${def.name}: expected number.`, {
+          code: 'invalid_arg_type', exitCode: EXIT_USAGE,
+          details: { arg: def.name, flag: `--${def.name}`, expected: 'number', received: raw },
+        });
+      }
+    }
+
+    if (def.enum && !def.enum.includes(value)) {
+      fail(`Invalid value for --${def.name}: expected one of (${def.enum.map(v => JSON.stringify(v)).join(', ')}).`, {
+        code: 'invalid_arg_value', exitCode: EXIT_USAGE,
+        suggestion: `Use one of: ${def.enum.map(v => `--${def.name} ${JSON.stringify(v)}`).join(', ')}.`,
+        details: { arg: def.name, flag: `--${def.name}`, expected: def.enum, received: value },
+      });
+    }
+
+    if (typeof value === 'number') {
+      if (def.minimum !== undefined && value < def.minimum) {
+        fail(`Invalid value for --${def.name}: minimum is ${def.minimum}, got ${value}.`, {
+          code: 'invalid_arg_value', exitCode: EXIT_USAGE,
+          details: { arg: def.name, flag: `--${def.name}`, minimum: def.minimum, received: value },
+        });
+      }
+      if (def.maximum !== undefined && value > def.maximum) {
+        fail(`Invalid value for --${def.name}: maximum is ${def.maximum}, got ${value}.`, {
+          code: 'invalid_arg_value', exitCode: EXIT_USAGE,
+          details: { arg: def.name, flag: `--${def.name}`, maximum: def.maximum, received: value },
+        });
+      }
+    }
+  }
+}
+
 export async function runCli(argv = process.argv.slice(2)) {
   const rawFormat = peekFormat(argv);
   if (rawFormat === '') {
@@ -279,6 +402,7 @@ export async function runCli(argv = process.argv.slice(2)) {
   if (tokens[0] === 'help' && tokens[1] === 'browser') printHelp(browserHelp(tokens[2]));
   if (tokens[0] === 'doctor') await runDoctorCommand(tokens.slice(1));
   if (tokens[0] === 'help' && tokens[1] === 'doctor') printHelp(doctorHelp());
+  if (tokens[0] === 'schema') await runSchemaCommand(tokens.slice(1));
 
   const adapters = listAdapters();
 
@@ -319,6 +443,7 @@ export async function runCli(argv = process.argv.slice(2)) {
 
   for (const def of adapter.args ?? [])
     if (args[def.name] === undefined) args[def.name] = def.default;
+  validateAdapterArgs(adapter, args, site, command);
   try {
     validateRequiredArgs(adapter, args);
   } catch (error) {
