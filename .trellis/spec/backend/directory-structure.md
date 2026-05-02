@@ -62,6 +62,7 @@ Contract:
   - `TAP_PACKAGE_ROOT` when an npm wrapper launches the binary
   - repo root for source execution
   - executable directory for standalone binary execution
+- Standalone binaries must also embed `tap-adapter-author` Markdown files through static imports and fall back to writing those embedded files when no assets root exists. This keeps `tap skill install ...` working after a user moves only the compiled `tap` binary to a directory such as `/usr/local/bin`.
 - npm packages bundle `skills/tap-adapter-author/`, but `postinstall` must not write to assistant-specific directories
 
 ### Local Setup and Browser Runtime Commands

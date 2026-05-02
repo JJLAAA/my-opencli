@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, readdirSync, statSync, copyFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync, copyFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
+import { BUNDLED_SKILLS } from './bundled-skills.js';
 
 const SKILL_NAME = 'tap-adapter-author';
 const PACKAGE_ROOT_ENV = 'TAP_PACKAGE_ROOT';
@@ -41,6 +42,24 @@ function copyDir(src, dest, { overwrite }) {
       copyFileSync(srcPath, destPath);
     }
   }
+}
+
+function copyBundledSkill(skillName, dest, { overwrite }) {
+  const files = BUNDLED_SKILLS[skillName];
+  if (!files) return false;
+
+  mkdirSync(dest, { recursive: true });
+
+  for (const [relativePath, contents] of Object.entries(files)) {
+    const destPath = join(dest, relativePath);
+    mkdirSync(dirname(destPath), { recursive: true });
+
+    if (overwrite || !existsSync(destPath)) {
+      writeFileSync(destPath, contents);
+    }
+  }
+
+  return true;
 }
 
 function assetRootCandidates() {
@@ -95,12 +114,6 @@ export function installSkill(providerName, options = {}) {
     throw new Error(`Unknown skill target: ${providerName}\nSupported targets: ${supported}`);
   }
 
-  const source = findSkillSource();
-  if (!source) {
-    const searched = packagedSkillCandidates().map(path => `  - ${resolvePath(path)}`).join('\n');
-    throw new Error(`Bundled skill not found: ${SKILL_NAME}\nSearched:\n${searched}`);
-  }
-
   const skillsDir = resolvePath(expandHome(options.target ?? provider.defaultDir()));
   const target = join(skillsDir, SKILL_NAME);
 
@@ -108,7 +121,13 @@ export function installSkill(providerName, options = {}) {
     throw new Error(`Skill already exists: ${target}\nUse --force to overwrite existing files.`);
   }
 
-  copyDir(source, target, { overwrite: Boolean(options.force) });
+  const source = findSkillSource();
+  if (source) {
+    copyDir(source, target, { overwrite: Boolean(options.force) });
+  } else if (!copyBundledSkill(SKILL_NAME, target, { overwrite: Boolean(options.force) })) {
+    const searched = packagedSkillCandidates().map(path => `  - ${resolvePath(path)}`).join('\n');
+    throw new Error(`Bundled skill not found: ${SKILL_NAME}\nSearched:\n${searched}`);
+  }
 
   return {
     provider: provider.label,
