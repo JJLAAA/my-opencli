@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 14
+- **Total Sessions**: 15
 - **Last Active**: 2026-05-02
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~572 | Active |
+| `journal-1.md` | ~614 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 15 | 2026-05-02 | Bundle skill assets and quiet Chrome sessions | `05922f5`, `5b598b7` | `main` |
 | 14 | 2026-05-02 | Add multi-request adapter pipeline primitives | `f07f83b` | `main` |
 | 13 | 2026-05-02 | Use IPv4 loopback for default CDP endpoint | `e69b6f0` | `main` |
 | 12 | 2026-05-02 | JSON-only output and argument validation | `cd5fef4` | `main` |

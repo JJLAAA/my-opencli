@@ -578,3 +578,37 @@ Implemented named state, foreach fan-out, mapOne, and browserFetch for multi-req
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: Bundle skill assets and quiet Chrome sessions
+
+**Date**: 2026-05-02
+**Task**: Bundle skill assets and quiet Chrome sessions
+**Branch**: `main`
+
+### Summary
+
+Embedded bundled assistant skill files into standalone builds so moved binaries can install tap-adapter-author, then added quieter browser automation by minimizing headed Agent Chrome by default, adding --foreground, creating Chrome profile directories before spawn, and using background CDP targets for adapter sessions.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `05922f5` | (see git log) |
+| `5b598b7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
