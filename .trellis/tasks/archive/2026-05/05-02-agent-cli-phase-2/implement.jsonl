@@ -1,0 +1,7 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": "src/cli.js", "reason": "Command dispatch, arg parsing, validation routing"}
+{"file": "src/help.js", "reason": "Help text generation - needs richer arg metadata"}
+{"file": "src/output.js", "reason": "JSON envelope format and schema building patterns"}
+{"file": "src/adapters.js", "reason": "Adapter discovery and loading"}
+{"file": "adapters/", "type": "directory", "reason": "Existing adapter args patterns"}

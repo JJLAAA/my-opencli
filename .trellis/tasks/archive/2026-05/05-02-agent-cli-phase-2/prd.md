@@ -292,16 +292,12 @@ Update docs to cover:
   - successful schemas go to stdout,
   - structured errors go to stderr.
 
-## Design Decisions To Confirm Before Implementation
+## Design Decisions (Confirmed)
 
-- Exact command shape:
-  - preferred: `tap schema [site] [command] --format json`
-  - alternative: `tap <site> <command> --schema`
-- Whether schema output should support human text, or require `--format json`.
-- Whether `integer` and `number` should both be supported, or whether `number` is enough.
-- Whether `description` should become required for adapter args in Phase 2 or only warned.
-- Whether management command schemas should be hand-authored or generated from shared metadata.
-
-## Non-Implementation Status
-
-This PRD intentionally stops before implementation. The task has not been initialized with implementation/check context and has not been started as the current Trellis task.
+| Decision | Choice |
+|----------|--------|
+| Command shape | `tap schema [site] [command] --format json` — standalone subcommand |
+| Schema output format | `--format json` only, no human-readable text mode |
+| Numeric types | Both `integer` and `number` supported |
+| `description` required? | Not required in Phase 2; emit `description: null` + warning when missing |
+| Management command schemas | Generated from shared metadata definitions, not hand-authored |
