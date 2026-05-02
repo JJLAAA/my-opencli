@@ -4,17 +4,14 @@ import { executePipeline } from './executor.js';
 import { commandHelp, globalHelp, siteHelp } from './help.js';
 import { printOutput, validateJsonOutputSchema } from './output.js';
 import { installSkill, skillHelp } from './skills.js';
-import { formatSetupResult, runSetup, setupHelp } from './setup.js';
+import { runSetup, setupHelp } from './setup.js';
 import {
   browserHelp,
   browserStatus,
-  formatBrowserStart,
-  formatBrowserStatus,
-  formatBrowserStop,
   startBrowser,
   stopBrowser,
 } from './browser.js';
-import { doctorHelp, formatDoctorResult, runDoctor } from './doctor.js';
+import { doctorHelp, runDoctor } from './doctor.js';
 import {
   buildGlobalSchema,
   buildAdapterCommandSchema,
@@ -30,16 +27,8 @@ const EXIT_BROWSER = 4;
 const EXIT_UPSTREAM = 5;
 const EXIT_ADAPTER = 6;
 
-let _jsonMode = false;
-
-export function isJsonMode() { return _jsonMode; }
-
 function fail(message, { code = 'general_error', exitCode = 1, suggestion = null, retryable = false, details = {} } = {}) {
-  if (_jsonMode) {
-    console.error(JSON.stringify({ error: { code, message, suggestion, retryable, details } }, null, 2));
-  } else {
-    console.error(message);
-  }
+  console.error(JSON.stringify({ error: { code, message, suggestion, retryable, details } }, null, 2));
   process.exit(exitCode);
 }
 
@@ -169,7 +158,7 @@ function runSkillCommand(tokens) {
     fail(error.message);
   }
 
-  console.log(`Installed ${result.skill} for ${result.provider}: ${result.target}`);
+  console.log(JSON.stringify(result, null, 2));
   process.exit(0);
 }
 
@@ -184,11 +173,7 @@ function runSetupCommand(tokens) {
     fail(error.message, { code: 'setup_error', exitCode: EXIT_CONFIG });
   }
 
-  if (_jsonMode) {
-    console.log(JSON.stringify(result, null, 2));
-  } else {
-    console.log(formatSetupResult(result));
-  }
+  console.log(JSON.stringify(result, null, 2));
   process.exit(0);
 }
 
@@ -202,25 +187,17 @@ async function runBrowserCommand(tokens) {
       if (rest.length)
         fail(`Unknown argument: ${rest[0]}\n\n${browserHelp('status')}`, { code: 'unknown_argument', exitCode: EXIT_USAGE });
       const status = await browserStatus();
-      const output = _jsonMode && !status.ok
+      const output = !status.ok
         ? { ...status, suggestions: ['tap browser start'] }
         : status;
-      if (_jsonMode) {
-        console.log(JSON.stringify(output, null, 2));
-      } else {
-        console.log(formatBrowserStatus(status));
-      }
+      console.log(JSON.stringify(output, null, 2));
       process.exit(status.ok ? 0 : EXIT_BROWSER);
     }
 
     if (command === 'start') {
       const options = parseBooleanFlags(rest, ['headless', 'foreground'], browserHelp('start'));
       const result = await startBrowser(options);
-      if (_jsonMode) {
-        console.log(JSON.stringify(result, null, 2));
-      } else {
-        console.log(formatBrowserStart(result));
-      }
+      console.log(JSON.stringify(result, null, 2));
       process.exit(0);
     }
 
@@ -228,11 +205,7 @@ async function runBrowserCommand(tokens) {
       if (rest.length)
         fail(`Unknown argument: ${rest[0]}\n\n${browserHelp('stop')}`, { code: 'unknown_argument', exitCode: EXIT_USAGE });
       const result = await stopBrowser();
-      if (_jsonMode) {
-        console.log(JSON.stringify(result, null, 2));
-      } else {
-        console.log(formatBrowserStop(result));
-      }
+      console.log(JSON.stringify(result, null, 2));
       process.exit(0);
     }
 
@@ -254,24 +227,15 @@ async function runDoctorCommand(tokens) {
     fail(`Unknown argument: ${tokens[0]}\n\n${doctorHelp()}`, { code: 'unknown_argument', exitCode: EXIT_USAGE });
 
   const result = await runDoctor();
-  if (_jsonMode) {
-    console.log(JSON.stringify(result, null, 2));
-  } else {
-    console.log(formatDoctorResult(result));
-  }
+  console.log(JSON.stringify(result, null, 2));
   process.exit(result.ok ? 0 : classifyDoctorExitCode(result));
 }
 
 async function runSchemaCommand(tokens) {
   if (tokens.length === 0 || tokens.some(isHelpToken)) {
-    if (!_jsonMode)
-      fail('Schema output requires --format json.', { code: 'unsupported_format', exitCode: EXIT_USAGE });
     console.log(JSON.stringify(await buildGlobalSchema(), null, 2));
     process.exit(0);
   }
-
-  if (!_jsonMode)
-    fail('Schema output requires --format json.', { code: 'unsupported_format', exitCode: EXIT_USAGE });
 
   const managementNames = getManagementCommandNames();
 
@@ -289,7 +253,7 @@ async function runSchemaCommand(tokens) {
   // Adapter command: schema <site> <command>
   const [site, command] = tokens;
   if (!command)
-    fail(`Missing command. Usage: tap schema <site> <command> --format json`, { code: 'usage_error', exitCode: EXIT_USAGE });
+    fail('Missing command. Usage: tap schema <site> <command>', { code: 'usage_error', exitCode: EXIT_USAGE });
 
   const loaded = await loadAdapter(site, command);
   if (!loaded)
@@ -383,12 +347,11 @@ export async function runCli(argv = process.argv.slice(2)) {
   if (rawFormat === '') {
     fail('Missing value for --format', { code: 'missing_format_value', exitCode: EXIT_USAGE });
   }
-  _jsonMode = rawFormat !== null;
   if (rawFormat !== null && rawFormat !== 'json') {
     fail(`Unsupported format: ${rawFormat}`, {
       code: 'unsupported_format',
       exitCode: EXIT_USAGE,
-      suggestion: 'Use --format json or omit --format for human-readable text.',
+      suggestion: 'Use --format json or omit --format. JSON is the only supported output format.',
       details: { format: rawFormat, supported: ['json'] },
     });
   }

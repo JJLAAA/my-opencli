@@ -3,7 +3,7 @@
 一个轻量级 CLI 工具，用于执行声明式数据管道，从 Web 数据源抓取并转换数据。
 
 ```
-tap <site> <command> [--key value] [--format json]
+tap <site> <command> [--key value]
 ```
 
 ## 核心价值
@@ -121,7 +121,7 @@ tap example list --limit 10
 |------|------|
 | _（默认）_ / `--format json` | 包含 `meta`、`schema`、`items` 的 JSON envelope，便于 Agent 解析 |
 
-所有命令均支持 `--format json`。数据命令默认使用 JSON。管理命令（`doctor`、`browser`、`setup`）默认输出人类可读文本，指定 `--format json` 时切换为 JSON。
+JSON 是唯一支持的命令输出格式。`--format json` 仍可显式传入，但对所有命令都是可选的。
 
 ### 退出码
 
@@ -137,7 +137,7 @@ tap example list --limit 10
 
 ### 结构化错误
 
-当设置了 `--format json` 时，CLI 失败会在 stderr 输出 JSON 错误：
+CLI 失败会在 stderr 输出 JSON 错误：
 
 ```json
 {
@@ -155,21 +155,21 @@ tap example list --limit 10
 
 ```bash
 # 诊断
-tap doctor --format json
+tap doctor
 # → { "ok": true, "checks": [...], "suggestions": [] }
 
 # 浏览器生命周期
-tap browser status --format json
+tap browser status
 # → { "ok": true, "endpoint": "...", "browser": "Chrome/..." }
 
-tap browser start --format json
+tap browser start
 # → { "alreadyRunning": false, "endpoint": "...", "chrome": "...", "profile": "..." }
 
-tap browser stop --format json
+tap browser stop
 # → { "stopped": true, "endpoint": "..." }
 
 # 初始化
-tap setup --format json
+tap setup
 # → { "directories": [...], "config": { "path": "...", "written": true }, ... }
 ```
 
@@ -239,7 +239,7 @@ export default {
 
 ### JSON 输出契约
 
-`--format json` 输出 envelope：
+数据命令输出 JSON envelope：
 
 ```json
 {
@@ -639,7 +639,7 @@ skill 会引导你完成：
 4. **确认 schema** — 核对字段名、raw path、类型、说明、单位、格式和样例
 5. **组装 pipeline** — 生成包含 `output.fields` 的完整适配器文件
 6. **安装适配器** — 写入 `~/.tap/adapters/<site>/<command>.js`
-7. **验证** — 运行 `tap <site> <command> --format json` 确认 envelope schema 和 items
+7. **验证** — 运行 `tap <site> <command>` 确认 envelope schema 和 items
 
 ### 决策树
 
@@ -662,7 +662,7 @@ skill 会引导你完成：
 TAP 默认不再内置具体站点示例适配器。使用 `tap-adapter-author` 在 `~/.tap/adapters/<site>/<command>.js` 下创建经过 schema 确认的适配器后再运行：
 
 ```bash
-tap example list --limit 5 --format json
+tap example list --limit 5
 ```
 
 ---

@@ -83,12 +83,13 @@ DONE
        ✋ 向用户汇报：列出全部候选字段 + 每个字段的示例值和含义判断，询问用户需要哪些字段
 
 [ ] 5. 设计接口
-       [ ] args：用户可配的参数，如 [{ name: 'limit', default: 20 }]
+       [ ] description：一句话说明该 adapter 返回什么数据、来自哪个站点/范围
+       [ ] args：用户可配的参数，如 [{ name: 'limit', default: 20, description: 'Maximum number of items to return.' }]
        [ ] output.fields：按用户确认的字段声明 schema
        [ ] 每个字段必须有 type 和 description，可选 format / unit / nullable / source / examples
        [ ] 命名用 camelCase，单位清晰（如 viewCount 不是 play）
        [ ] columns：如需 table 输出，按 schema 字段顺序排列
-       ✋ 向用户汇报：展示 args / output.fields / columns / pipeline 草稿，等待最终确认后再写文件
+       ✋ 向用户汇报：展示 description / args / output.fields / columns / pipeline 草稿，等待最终确认后再写文件
 
 [ ] 6. 组装 pipeline
        [ ] 按 Pattern 选对应模板（references/patterns.md）
@@ -103,7 +104,7 @@ DONE
        [ ] 写入 ~/.tap/adapters/<site>/<command>.js
 
 [ ] 8. 验证
-       [ ] 运行 tap <site> <command> --format json
+       [ ] 运行 tap <site> <command>
        [ ] 确认 JSON 是 { meta, schema, items } envelope
        [ ] 确认 schema.properties 与 output.fields 一致
        [ ] 确认 items 只包含 schema 声明字段
@@ -142,6 +143,8 @@ DONE
 ## 关键约定
 
 - 适配器只能用 pipeline 声明式步骤，不能写自定义逻辑函数
+- 顶层 `description` 必须写一句业务说明，用于 `tap schema` 全局命令发现；不能省略
+- `args` 中每个参数都应写 `description`，让 `tap schema <site> <command>` 能指导 Agent 正确调用
 - `output.fields` 是 JSON 输出契约，必须由用户确认后写入；不要从字段名或样例值静默猜最终 schema
 - JSON 输出只包含 `output.fields` 声明的字段；未声明字段会被 runtime 丢弃
 - `columns` 只决定表格列顺序，必须与 schema/map 输出字段对齐
@@ -151,7 +154,11 @@ DONE
 
 ## Schema 确认规则
 
-写入适配器前必须向用户展示 schema 确认表：
+写入适配器前必须向用户展示 adapter schema 确认表，并包含顶层 description：
+
+| adapter description | site | command | uncertainty |
+|---------------------|------|---------|-------------|
+| Fetch recent articles from example.com. | example | articles | low |
 
 | output field | raw path | type | description | sample | uncertainty |
 |--------------|----------|------|-------------|--------|-------------|
@@ -159,6 +166,7 @@ DONE
 
 确认要求：
 
+- 顶层 `description` 必须说明 adapter 的业务用途，不只复述命令名
 - 字段名使用 camelCase，表达业务含义，不照搬含糊的上游字段名
 - `type` 使用 `string` / `integer` / `number` / `boolean` / `array` / `object`
 - `description` 必须说明业务含义，不只复述字段名

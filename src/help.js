@@ -28,14 +28,14 @@ function sectionTitle(text) {
 export function globalHelp() {
   const adapters = listAdapters();
   const lines = [
-    'Usage: tap <site> <command> [--key value] [--format json]',
+    'Usage: tap <site> <command> [--key value]',
     '       tap help [site] [command]',
     '',
-    'Output is a JSON envelope with meta, schema, and items. JSON is the only supported format.',
+    'Output is JSON by default. --format json is accepted but optional.',
     '',
     sectionTitle('Commands'),
     '  help              Show global, site, or command help',
-    '  schema            Show command schemas (requires --format json)',
+    '  schema            Show command schemas',
     '  setup             Initialize local TAP files explicitly',
     '  browser           Manage the agent Chrome runtime',
     '  doctor            Diagnose local TAP setup',
@@ -55,10 +55,10 @@ export function globalHelp() {
 
 export function siteHelp(site, commands) {
   const lines = [
-    `Usage: tap ${site} <command> [--key value] [--format json]`,
+    `Usage: tap ${site} <command> [--key value]`,
     `       tap help ${site} <command>`,
     '',
-    'Output is a JSON envelope with meta, schema, and items. JSON is the only supported format.',
+    'Output is JSON by default. --format json is accepted but optional.',
     '',
     sectionTitle(`Commands for ${site}`),
   ];
@@ -71,12 +71,12 @@ export function commandHelp(site, command, adapter) {
   const args = adapter.args ?? [];
   const usageSuffix = args.map(formatArgUsage).join('');
   const lines = [
-    `Usage: tap ${site} ${command}${usageSuffix} [--format json]`,
+    `Usage: tap ${site} ${command}${usageSuffix}`,
   ];
 
   if (adapter.description) lines.push('', adapter.description);
 
-  lines.push('', 'Output is a JSON envelope with meta, schema, and items. JSON is the only supported format.');
+  lines.push('', 'Output is a JSON envelope with meta, schema, and items. --format json is accepted but optional.');
 
   if (args.length) {
     lines.push('', sectionTitle('Options'));

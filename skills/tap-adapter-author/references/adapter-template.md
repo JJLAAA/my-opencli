@@ -6,9 +6,10 @@
 
 ```js
 export default {
+  description: 'Fetch ranked items from example.com.',
   args: [
-    { name: 'limit', default: 20 },
-    // { name: 'keyword', default: '' },
+    { name: 'limit', default: 20, description: 'Maximum number of items to return.' },
+    // { name: 'keyword', default: '', description: 'Search keyword.' },
   ],
   output: {
     type: 'list',
@@ -37,7 +38,8 @@ export default {
 
 ```js
 export default {
-  args: [{ name: 'limit', default: 20 }],
+  description: 'Fetch popular videos from example.com using the logged-in browser session.',
+  args: [{ name: 'limit', default: 20, description: 'Maximum number of videos to return.' }],
   output: {
     type: 'list',
     itemName: 'video',
@@ -92,9 +94,10 @@ export default {
 
 ```js
 export default {
+  description: 'Fetch entries from the public example.com listing API.',
   args: [
-    { name: 'limit', default: 20 },
-    { name: 'category', default: 'hot' },
+    { name: 'limit', default: 20, description: 'Maximum number of entries to return.' },
+    { name: 'category', default: 'hot', description: 'Listing category to fetch.' },
   ],
   output: {
     type: 'list',
@@ -152,10 +155,7 @@ mkdir -p ~/.tap/adapters/<site>/
 
 ```bash
 # JSON envelope 验证
-tap <site> <command> --format json
-
-# 表格验证
-tap <site> <command> --format table
+tap <site> <command>
 
 # 带参数
 tap <site> <command> --limit 5
@@ -168,6 +168,8 @@ tap <site> <command> --keyword "搜索词"
 
 - `<site>`：站点域名主体，小写，如 `bilibili`、`linuxdo`、`github`
 - `<command>`：数据类型或动作，小写，如 `hot`、`news`、`trending`
+- 顶层 `description`：一句话说明 adapter 返回什么数据、来自哪个站点/范围，用于 `tap schema` 全局命令发现
+- `args[].description`：说明参数业务含义和取值方式，避免 Agent 猜参数
 - `output.fields` 字段名：camelCase，含义清晰，必要时带单位（如 `viewCount` 而非 `play`）
 - `columns` 只用于 table 输出；JSON schema 以 `output.fields` 为准
 

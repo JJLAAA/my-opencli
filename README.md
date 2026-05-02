@@ -9,7 +9,7 @@ A lightweight CLI tool for executing declarative data pipelines that fetch and t
 *[中文文档](README.zh.md)*
 
 ```
-tap <site> <command> [--key value] [--format json]
+tap <site> <command> [--key value]
 ```
 
 ## Core Value
@@ -117,7 +117,7 @@ tap example list --limit 10
 |------|-------------|
 | _(default)_ / `--format json` | JSON envelope with `meta`, `schema`, and `items` for agent-friendly parsing |
 
-All commands accept `--format json`. For data commands this is the default. Management commands (`doctor`, `browser`, `setup`) output human-readable text by default and switch to JSON when `--format json` is given.
+JSON is the only supported command output format. `--format json` is accepted for explicitness, but it is optional for all commands.
 
 ### Exit Codes
 
@@ -133,7 +133,7 @@ All commands accept `--format json`. For data commands this is the default. Mana
 
 ### Structured Errors
 
-When `--format json` is set, CLI failures produce a JSON error on stderr:
+CLI failures produce a JSON error on stderr:
 
 ```json
 {
@@ -151,21 +151,21 @@ When `--format json` is set, CLI failures produce a JSON error on stderr:
 
 ```bash
 # Diagnostics
-tap doctor --format json
+tap doctor
 # → { "ok": true, "checks": [...], "suggestions": [] }
 
 # Browser lifecycle
-tap browser status --format json
+tap browser status
 # → { "ok": true, "endpoint": "...", "browser": "Chrome/..." }
 
-tap browser start --format json
+tap browser start
 # → { "alreadyRunning": false, "endpoint": "...", "chrome": "...", "profile": "..." }
 
-tap browser stop --format json
+tap browser stop
 # → { "stopped": true, "endpoint": "..." }
 
 # Setup
-tap setup --format json
+tap setup
 # → { "directories": [...], "config": { "path": "...", "written": true }, ... }
 ```
 
@@ -235,7 +235,7 @@ export default {
 
 ### JSON Output Contract
 
-`--format json` prints an envelope:
+Data commands print a JSON envelope:
 
 ```json
 {
@@ -652,7 +652,7 @@ The skill will:
 4. **Confirm the schema** — review field names, raw paths, types, descriptions, units, formats, and examples
 5. **Assemble the pipeline** — produce a complete adapter file with `output.fields`
 6. **Install it** — write to `~/.tap/adapters/<site>/<command>.js`
-7. **Verify** — run `tap <site> <command> --format json` and confirm the envelope schema and items
+7. **Verify** — run `tap <site> <command>` and confirm the envelope schema and items
 
 ### Decision Tree
 
@@ -675,7 +675,7 @@ If stuck, the skill has a fallback path for each failure mode (403, empty array,
 TAP no longer ships site-specific example adapters by default. Use `tap-adapter-author` to create a schema-confirmed adapter under `~/.tap/adapters/<site>/<command>.js`, then run it:
 
 ```bash
-tap example list --limit 5 --format json
+tap example list --limit 5
 ```
 
 ---

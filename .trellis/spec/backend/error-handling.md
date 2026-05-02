@@ -6,7 +6,7 @@
 
 ## Overview
 
-Errors are classified into exit codes and output structured JSON when `--format json` is set. All error output goes to stderr; successful output goes to stdout.
+Errors are classified into exit codes and always output structured JSON. All error output goes to stderr; successful command output goes to stdout.
 
 ---
 
@@ -31,8 +31,7 @@ Errors are classified into exit codes and output structured JSON when `--format 
 function fail(message, { code, exitCode, suggestion, retryable, details } = {})
 ```
 
-- When `_jsonMode` is true: outputs `{ error: { code, message, suggestion, retryable, details } }` as JSON to stderr.
-- When `_jsonMode` is false: outputs plain `message` to stderr.
+- Outputs `{ error: { code, message, suggestion, retryable, details } }` as JSON to stderr.
 - Always calls `process.exit(exitCode)`.
 
 ### Error code naming
@@ -43,14 +42,13 @@ Use `snake_case` identifiers: `unknown_site`, `missing_required_arg`, `unsupport
 
 ## `--format` Detection
 
-`--format` is detected and stripped from argv globally in `runCli()` before any command dispatch. This ensures that even early errors (unknown site, unsupported format) respect JSON mode:
+`--format` is detected and stripped from argv globally in `runCli()` before any command dispatch. JSON is the default and only supported output format; `--format json` is accepted but optional.
 
 ```js
 const rawFormat = peekFormat(argv);
-_jsonMode = rawFormat !== null;
 ```
 
-When `--format` is present with any value, `_jsonMode` is set to `true` *before* validation. This means `--format yaml` still produces a structured JSON error (with `code: unsupported_format`) rather than plain text.
+When `--format` is present with an unsupported value, the CLI still produces a structured JSON error with `code: unsupported_format`.
 
 ---
 
@@ -64,7 +62,7 @@ All argument parsing, unknown commands/sites, and unsupported formats. These are
 fail(`Unknown site: ${site}`, { code: 'unknown_site', exitCode: EXIT_USAGE });
 fail(`Unsupported format: ${fmt}`, {
   code: 'unsupported_format', exitCode: EXIT_USAGE,
-  suggestion: 'Use --format json or omit --format for human-readable text.',
+  suggestion: 'Use --format json or omit --format. JSON is the only supported output format.',
   details: { format: fmt, supported: ['json'] },
 });
 ```
@@ -105,18 +103,14 @@ fail(error.message, { code: 'adapter_contract_error', exitCode: EXIT_ADAPTER });
 
 ## Top-Level Error Handler
 
-`bin/cli.js` wraps `runCli()` in a try/catch for truly unexpected errors (bugs). These always exit 1 with `code: internal_error` in JSON mode.
+`bin/cli.js` wraps `runCli()` in a try/catch for truly unexpected errors (bugs). These always exit 1 with `code: internal_error`.
 
 ```js
 // bin/cli.js
 try {
   await runCli();
 } catch (error) {
-  if (isJsonMode()) {
-    console.error(JSON.stringify({ error: { code: 'internal_error', message: error.message, ... } }));
-  } else {
-    console.error(error.message || error);
-  }
+  console.error(JSON.stringify({ error: { code: 'internal_error', message: error.message, ... } }));
   process.exit(1);
 }
 ```

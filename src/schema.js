@@ -93,7 +93,7 @@ export async function buildGlobalSchema() {
         command,
         name: `${site} ${command}`,
         description: loaded?.adapter?.description ?? null,
-        schemaCommand: `tap schema ${site} ${command} --format json`,
+        schemaCommand: `tap schema ${site} ${command}`,
       });
     }
   }
@@ -103,7 +103,7 @@ export async function buildGlobalSchema() {
       kind: 'management',
       name,
       description: meta.description,
-      schemaCommand: `tap schema ${name} --format json`,
+      schemaCommand: `tap schema ${name}`,
     });
   }
 
