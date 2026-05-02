@@ -537,3 +537,44 @@ Changed TAP's default CDP endpoint from localhost to 127.0.0.1, synchronized REA
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: Add multi-request adapter pipeline primitives
+
+**Date**: 2026-05-02
+**Task**: Add multi-request adapter pipeline primitives
+**Branch**: `main`
+
+### Summary
+
+Implemented named state, foreach fan-out, mapOne, and browserFetch for multi-request TAP adapters; updated README, adapter-author skill docs, specs, and task PRD; verified old pipeline compatibility, new list-detail pipeline, CLI JSON envelope, build, and diff check.
+
+### Main Changes
+
+- Added named pipeline state with `as` and source selection with `from`.
+- Added `foreach` with bounded concurrency for list-detail and enrichment pipelines.
+- Added `mapOne` for transforming a single nested result and `browserFetch` for cookie-backed API requests in browser context.
+- Updated recursive browser-session detection for nested `foreach` steps.
+- Updated README, Chinese README, adapter-author skill references, Trellis specs, and the task PRD.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f07f83b` | (see git log) |
+
+### Testing
+
+- [OK] Existing linear pipeline smoke test via direct `executePipeline`
+- [OK] New `as` / `from` / `foreach` smoke test via direct `executePipeline`
+- [OK] CLI JSON envelope test with temporary adapter in `/private/tmp/tap-multi-http-adapters`
+- [OK] `bun run build`
+- [OK] `git diff --check`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
