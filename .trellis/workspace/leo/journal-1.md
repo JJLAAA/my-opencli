@@ -612,3 +612,55 @@ Embedded bundled assistant skill files into standalone builds so moved binaries 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: Agent-friendly CLI phase 1
+
+**Date**: 2026-05-02
+**Task**: Agent-friendly CLI phase 1
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## What was done
+
+Implemented structured JSON errors, exit codes (2–6), and JSON output for management commands.
+
+### Changed Files
+| File | Change |
+|------|--------|
+| `src/cli.js` | Replaced `fail()` with structured error model; added exit codes, global `--format` detection, JSON output paths for doctor/browser/setup |
+| `src/doctor.js` | Added `suggestions` to result object; formatter uses it instead of hardcoded text |
+| `bin/cli.js` | Top-level try/catch for unexpected errors, structured JSON in JSON mode |
+| `README.md` / `README.zh.md` | Exit code table, structured error docs, JSON management command examples |
+| `CLAUDE.md` | Updated usage, added exit codes section, updated module descriptions |
+| `.trellis/spec/backend/error-handling.md` | Rewritten to reflect new error model |
+
+### Key Decisions
+- `--format` stripped globally before dispatch so early errors (unknown site, unsupported format) respect JSON mode
+- `_jsonMode` set before format validation so `--format yaml` still outputs structured JSON error
+- Management commands already returned structured objects internally — JSON path serializes them directly
+- Pipeline error classification uses regex heuristic (cdp/chrome/browser → exit 4, else → exit 5)
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `46e737d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
