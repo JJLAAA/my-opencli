@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve as resolvePath } from 'node:path';
 import { homedir } from 'node:os';
 
-export const DEFAULT_CDP_ENDPOINT = 'http://localhost:9222';
+export const DEFAULT_CDP_ENDPOINT = 'http://127.0.0.1:9222';
 export const DEFAULT_CHROME_PROFILE = '~/.chrome-automation-profile';
 
 export function expandHome(path) {

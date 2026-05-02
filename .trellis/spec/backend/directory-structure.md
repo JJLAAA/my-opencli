@@ -96,7 +96,7 @@ Default local state:
 - Log directory: `~/.tap/logs/`
 - Config file: `~/.tap/config.json`
 - Config fields: `cdpEndpoint`, `chromeProfile`
-- Default `cdpEndpoint`: `http://localhost:9222`
+- Default `cdpEndpoint`: `http://127.0.0.1:9222`
 - Default `chromeProfile`: `~/.chrome-automation-profile`
 - Environment overrides: `TAP_CDP_ENDPOINT`, `TAP_ADAPTERS_DIR`, `TAP_CHROME_PATH`
 

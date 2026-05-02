@@ -92,7 +92,7 @@ CLI Args → listAdapters() → loadAdapter(site, cmd)
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `TAP_CDP_ENDPOINT` | `http://localhost:9222` | Chrome DevTools Protocol endpoint |
+| `TAP_CDP_ENDPOINT` | `http://127.0.0.1:9222` | Chrome DevTools Protocol endpoint |
 | `TAP_ADAPTERS_DIR` | (none) | Additional adapter directory (searched first) |
 
 ## Key Dependency

@@ -117,7 +117,7 @@ tap example list --limit 10
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TAP_CDP_ENDPOINT` | `http://localhost:9222` | Chrome DevTools Protocol endpoint for browser-based adapters |
+| `TAP_CDP_ENDPOINT` | `http://127.0.0.1:9222` | Chrome DevTools Protocol endpoint for browser-based adapters |
 | `TAP_ADAPTERS_DIR` | _(none)_ | Additional directory to search for adapters (takes priority over user and built-in adapters) |
 | `TAP_CHROME_PATH` | _(auto-detected)_ | Chrome executable path used by `tap browser start` |
 

@@ -527,7 +527,7 @@
             <span class="num">3</span>
             <h3>浏览器会话</h3>
             <p>需要登录态时，通过 CDP 进入已有 Chrome 上下文。</p>
-            <div class="codebox">TAP_CDP_ENDPOINT=http://localhost:9222</div>
+            <div class="codebox">TAP_CDP_ENDPOINT=http://127.0.0.1:9222</div>
           </div>
           <div class="note" style="--note:#0f766e;">
             <span class="num">4</span>

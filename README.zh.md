@@ -121,7 +121,7 @@ tap example list --limit 10
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `TAP_CDP_ENDPOINT` | `http://localhost:9222` | 浏览器适配器使用的 Chrome DevTools Protocol 端点 |
+| `TAP_CDP_ENDPOINT` | `http://127.0.0.1:9222` | 浏览器适配器使用的 Chrome DevTools Protocol 端点 |
 | `TAP_ADAPTERS_DIR` | _（无）_ | 额外的适配器搜索目录（优先于用户和内置适配器） |
 | `TAP_CHROME_PATH` | _（自动检测）_ | `tap browser start` 使用的 Chrome 可执行文件路径 |
 
