@@ -664,3 +664,36 @@ Implemented structured JSON errors, exit codes (2–6), and JSON output for mana
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: Agent CLI Phase 2: schema introspection & arg validation
+
+**Date**: 2026-05-03
+**Task**: Agent CLI Phase 2: schema introspection & arg validation
+**Branch**: `main`
+
+### Summary
+
+Implemented R1-R6 from Phase 2 PRD: tap schema (global/per-command/management), adapter arg validation (unknown flags, type/enum/min-max, boolean coercion), enriched help text with type annotations. New src/schema.js module.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ea5bf46` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

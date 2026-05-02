@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
-- **Last Active**: 2026-05-02
+- **Total Sessions**: 17
+- **Last Active**: 2026-05-03
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~666 | Active |
+| `journal-1.md` | ~699 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 17 | 2026-05-03 | Agent CLI Phase 2: schema introspection & arg validation | `ea5bf46` | `main` |
 | 16 | 2026-05-02 | Agent-friendly CLI phase 1 | `46e737d` | `main` |
 | 15 | 2026-05-02 | Bundle skill assets and quiet Chrome sessions | `05922f5`, `5b598b7` | `main` |
 | 14 | 2026-05-02 | Add multi-request adapter pipeline primitives | `f07f83b` | `main` |
