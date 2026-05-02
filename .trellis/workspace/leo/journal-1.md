@@ -499,3 +499,41 @@ Removed public table output support, made JSON the only CLI output format, added
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: Use IPv4 loopback for default CDP endpoint
+
+**Date**: 2026-05-02
+**Task**: Use IPv4 loopback for default CDP endpoint
+**Branch**: `main`
+
+### Summary
+
+Changed TAP's default CDP endpoint from localhost to 127.0.0.1, synchronized README/docs/spec references, verified setup output and build, then pushed the commit.
+
+### Main Changes
+
+- Updated `DEFAULT_CDP_ENDPOINT` in `src/config.js` from `http://localhost:9222` to `http://127.0.0.1:9222`.
+- Synchronized the default endpoint in English/Chinese README files, `CLAUDE.md`, architecture infographic HTML/SVG, and backend spec documentation.
+- Confirmed no `localhost:9222` references remain in the relevant runtime/docs/spec files.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e69b6f0` | (see git log) |
+
+### Testing
+
+- [OK] `HOME=/private/tmp/tap-verify-cdp-default bun run bin/cli.js setup --force`
+- [OK] Verified generated config contains `"cdpEndpoint": "http://127.0.0.1:9222"`
+- [OK] `bun run build`
+- [OK] `git diff --check`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
