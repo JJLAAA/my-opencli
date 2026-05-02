@@ -177,7 +177,8 @@ async function executeSteps(pipeline, env) {
       await env.session.navigate(render(params, context(env)));
 
     } else if (op === 'evaluate') {
-      env.data = await env.session.evaluate(render(params, context(env)));
+      const cfg = stepConfig(params);
+      env.data = await env.session.evaluate(render(cfg.code ?? params, context(env)));
       saveAs(env, params, env.data);
 
     } else if (op === 'intercept') {

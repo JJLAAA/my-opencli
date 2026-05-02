@@ -219,6 +219,23 @@ The runtime does not infer field meaning from row keys. JSON output requires exp
 
 Each step is an object with a single key naming the operation.
 
+#### Step Reference
+
+| Step | Params | Updates `data` | Browser | Notes |
+|------|--------|----------------|---------|-------|
+| `fetch` | string URL or `{ url, as? }` | Parsed JSON response | No | Host-side HTTP GET. `as` saves the response in `state`. |
+| `browserFetch` | `{ url, as?, method?, headers?, body?, credentials? }` | Parsed JSON response | Yes | Runs page-context `fetch()`. `credentials` defaults to `include`. |
+| `navigate` | URL string | No | Yes | Opens a page and waits for load + SPA settle delay. |
+| `evaluate` | JS expression string or `{ code, as? }` | Return value | Yes | Runs in page context. Object form can save the return value with `as`. |
+| `intercept` | `{ capture, trigger?, timeout?, select?, as? }` | Captured JSON response(s) | Yes | Captures matching XHR/fetch responses after a trigger. |
+| `select` | path string or `{ from?, path?, as? }` | Selected value | No | `from` reads current `data` by default, or a named state/path. |
+| `map` | `{ select?, ...fields }` | Array of mapped objects | No | Maps each array item. `select` is an inline source path from current `data`. |
+| `mapOne` | `{ ...fields }` | One mapped object | No | Maps the current value; mainly used inside `foreach`. |
+| `foreach` | `{ from?, as?, concurrency?, steps }` | Array of nested results | Depends on nested steps | Iterates an array and collects each nested pipeline result. |
+| `filter` | JS expression string | Filtered array | No | Expression gets `item`, `index`, `args`, `data`, and `state`. |
+| `sort` | field string or `{ by, order? }` | Sorted array | No | `order: 'desc'` reverses the sort. |
+| `limit` | number or template string | Sliced array | No | Usually last. |
+
 #### `fetch` — HTTP GET
 
 ```js
@@ -251,6 +268,7 @@ Waits for `Page.loadEventFired` + 800ms for SPA initialization. Requires Chrome 
 
 ```js
 { evaluate: `document.title` }
+{ evaluate: { code: `location.href`, as: 'currentUrl' } }
 // or async:
 { evaluate: `(async () => {
   const res = await fetch('/api/data');
@@ -258,7 +276,7 @@ Waits for `Page.loadEventFired` + 800ms for SPA initialization. Requires Chrome 
 })()` }
 ```
 
-Replaces `data` with the return value. Runs with full page context (cookies, session).
+Replaces `data` with the return value. Runs with full page context (cookies, session). Use object form when you need to save the result with `as`.
 
 #### `intercept` — Capture XHR/fetch requests
 

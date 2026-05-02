@@ -134,7 +134,7 @@ DONE
 | 文件 | 什么时候翻 |
 |------|----------|
 | `references/patterns.md` | Step 2-6：判断 Pattern + 完整 pipeline 模板 |
-| `references/field-mapping.md` | Step 6：${{ }} 表达式速查 |
+| `references/field-mapping.md` | Step 6：${{ }} 表达式 + Pipeline Step Reference 速查 |
 | `references/adapter-template.md` | Step 6-7：完整适配器结构 |
 
 ---
