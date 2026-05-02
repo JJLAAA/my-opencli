@@ -90,6 +90,15 @@ function findSite(adapters, site) {
   return adapters.find(entry => entry.site === site);
 }
 
+function needsBrowserSession(pipeline = []) {
+  return pipeline.some(step => {
+    if ('navigate' in step || 'evaluate' in step || 'intercept' in step || 'browserFetch' in step) {
+      return true;
+    }
+    return 'foreach' in step && needsBrowserSession(step.foreach?.steps);
+  });
+}
+
 async function printCommandHelp(site, command, siteEntry) {
   const loaded = await loadAdapter(site, command);
   if (!loaded) fail(`Unknown command: ${site} ${command}\n\n${siteHelp(site, siteEntry.commands)}`);
@@ -233,9 +242,7 @@ export async function runCli(argv = process.argv.slice(2)) {
     }
   }
 
-  const needsBrowser = adapter.pipeline.some(step =>
-    'navigate' in step || 'evaluate' in step || 'intercept' in step
-  );
+  const needsBrowser = needsBrowserSession(adapter.pipeline);
 
   let session = null, targetId = null, base = null;
   try {

@@ -65,6 +65,9 @@ Supported ops:
 | `navigate` | URL string | Open URL in Chrome tab (establishes cookie context) |
 | `evaluate` | JS expression string | Run JS in browser page, returns value |
 | `fetch` | URL string or `{ url }` | HTTP GET, returns parsed JSON |
+| `browserFetch` | `{ url, as? }` | Run browser-context `fetch()` with cookies |
+| `foreach` | `{ from, as, concurrency?, steps }` | Run nested steps for each item in an array |
+| `mapOne` | object of `{ field: template }` | Transform the current value into one object |
 | `map` | object of `{ field: template }` | Transform each item |
 | `filter` | JS expression string | Keep items where expression is truthy |
 | `limit` | number or template | Slice data to N items |
@@ -80,6 +83,39 @@ Available variables:
 - `index` — 0-based index (in `map`, `filter`)
 - `args` — parsed CLI args object
 - `data` — current pipeline data (in `navigate`, `fetch` params)
+- `state` — named results saved by `as`
+
+### Named State and Multi-Request Pipelines
+
+Use only three concepts for multi-request adapters:
+
+- `as` saves a step result under a name.
+- `from` reads current data or a named state path.
+- `foreach` iterates an array and collects nested step results.
+
+```js
+pipeline: [
+  { fetch: { url: 'https://api.example.com/items', as: 'list' } },
+  { select: { from: 'list', path: 'items', as: 'items' } },
+  {
+    foreach: {
+      from: 'items',
+      as: 'details',
+      concurrency: 5,
+      steps: [
+        { fetch: { url: 'https://api.example.com/items/${{ item.id }}' } },
+        { mapOne: {
+          title: '${{ item.title }}',
+          status: '${{ data.status }}',
+        }},
+      ],
+    },
+  },
+  { select: { from: 'details' } },
+]
+```
+
+Keep existing simple pipelines unchanged. Do not introduce custom helper functions in adapters for list-detail fetching; prefer `as` / `from` / `foreach`.
 
 ```js
 { map: {
@@ -104,6 +140,14 @@ When the adapter needs browser cookies (logged-in APIs), use `navigate` to estab
 ```
 
 The `evaluate` string must be a self-contained JS expression that returns a value (or a Promise).
+
+For plain API requests that only need browser cookies, prefer `browserFetch` over an inline `evaluate` fetch:
+
+```js
+{ navigate: 'https://site.com' },
+{ browserFetch: { url: '/api/items', as: 'itemsResponse' } },
+{ select: { from: 'itemsResponse', path: 'items' } },
+```
 
 ---
 

@@ -48,7 +48,7 @@ Produces `tap` — a standalone Bun single-file executable. The binary is commit
 - [ ] Assistant skills are installed only through explicit commands such as `tap skill install claude-code`
 - [ ] Adapter follows the `{ args, output.fields, columns, pipeline }` shape for JSON output
 - [ ] `output.fields` has explicit field `type` and `description`; runtime must not infer schema from `columns`
-- [ ] Pipeline steps use only supported ops: `fetch`, `navigate`, `evaluate`, `intercept`, `select`, `filter`, `map`, `sort`, `limit`
+- [ ] Pipeline steps use only supported ops: `fetch`, `browserFetch`, `navigate`, `evaluate`, `intercept`, `select`, `filter`, `map`, `mapOne`, `foreach`, `sort`, `limit`
 - [ ] Template expressions use `${{ expr }}` syntax
 - [ ] Cleanup runs in `finally` (browser tab is closed)
 - [ ] Errors propagate correctly (no silent swallowing except `closeTab`)

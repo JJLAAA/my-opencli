@@ -17,6 +17,7 @@ Adapters are simple data files. The bar is: correct shape, correct pipeline ops,
 - **`columns` matches `map` output keys** — column names must exactly match the keys produced by the final `map` step
 - **`limit` is last** — if a `limit` step is present, it goes after `map`
 - **`credentials: 'include'`** — always include in `evaluate` fetch calls that need cookies
+- **Simple multi-request DSL** — use `as`, `from`, and `foreach` for list-detail or enrichment pipelines instead of hiding request orchestration in one large `evaluate` string
 
 ---
 
@@ -54,4 +55,5 @@ Verify:
 
 - **Column name mismatch** — `columns: ['play_count']` but `map` produces `play` → empty column
 - **Missing `await` in `evaluate`** — async evaluate string must be `(async () => { ... })()`
-- **Wrong CDP endpoint** — set `OPENCLI_CDP_ENDPOINT` if Chrome isn't on default port 9222
+- **Wrong CDP endpoint** — set `TAP_CDP_ENDPOINT` if Chrome isn't on default port 9222
+- **Overcomplicated multi-request adapters** — prefer named state and `foreach`; keep `evaluate` for DOM extraction or page-specific logic that cannot be represented declaratively

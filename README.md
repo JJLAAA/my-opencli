@@ -12,6 +12,12 @@ A lightweight CLI tool for executing declarative data pipelines that fetch and t
 tap <site> <command> [--key value] [--format json]
 ```
 
+## Core Value
+
+TAP's value is turning data and operations that already exist in business systems, but are not suitable for agents to consume directly, into stable, verifiable, and structured CLI capabilities.
+
+The goal is to let agents work with real business context for querying, diagnosis, summarization, troubleshooting, and decision support without forcing them to understand complex UIs or write one-off scrapers.
+
 ## How It Works
 
 TAP separates **what to fetch** from **how to fetch it**:
@@ -28,7 +34,7 @@ CLI Args
             └─ printOutput(data, format, { adapter, site, command, args })
 ```
 
-The pipeline runs steps sequentially. Each step receives the output of the previous step as `data` and produces a new `data` for the next.
+The pipeline runs steps sequentially. Each step receives the output of the previous step as `data` and produces a new `data` for the next. Steps can also save results with `as` and read them later with `from`, which keeps multi-request adapters readable without hiding orchestration inside one large script.
 
 ---
 
@@ -219,9 +225,19 @@ Each step is an object with a single key naming the operation.
 { fetch: 'https://api.example.com/data' }
 // or with template:
 { fetch: { url: 'https://api.example.com/search?q=${{ args.keyword }}' } }
+// save the result for later steps:
+{ fetch: { url: 'https://api.example.com/projects', as: 'projects' } }
 ```
 
 Returns parsed JSON. No browser required.
+
+#### `browserFetch` — HTTP GET in browser context
+
+```js
+{ browserFetch: { url: '/api/feed', as: 'feed' } }
+```
+
+Runs `fetch()` inside the current browser page, using `credentials: 'include'` by default. Use after `navigate` when an API needs the agent Chrome login state.
 
 #### `navigate` — Open URL in browser
 
@@ -274,6 +290,7 @@ Patches `window.fetch` and `XMLHttpRequest` in the page to intercept matching re
 { select: 'data.items[0].title' }
 { select: 'data["hot-list"][*].title' }
 { select: 'groups[*].items[*]' }
+{ select: { from: 'projects', path: 'items', as: 'items' } }
 ```
 
 Supported selector syntax:
@@ -287,6 +304,8 @@ Supported selector syntax:
 | `groups[*].items[*]` | Flatten nested arrays by one level per wildcard |
 
 Missing paths return `null`.
+
+Use `{ from, path, as }` to read from a named state value and save the selected result under another name. `from` can be a state name or path such as `projects.items`.
 
 #### `map` — Transform array items
 
@@ -307,6 +326,39 @@ Supports inline `select` to sub-select before mapping:
   title: '${{ item.title }}',
 }}
 ```
+
+#### `mapOne` — Transform one value
+
+```js
+{ mapOne: {
+  id: '${{ item.id }}',
+  status: '${{ data.status }}',
+}}
+```
+
+Transforms the current value into one object. This is mainly useful inside `foreach`, where `item` is the original iterated item and `data` is the current nested-step result.
+
+#### `foreach` — Run steps for each item
+
+```js
+{
+  foreach: {
+    from: 'items',
+    as: 'details',
+    concurrency: 5,
+    steps: [
+      { fetch: { url: 'https://api.example.com/items/${{ item.id }}' } },
+      { mapOne: {
+        id: '${{ item.id }}',
+        title: '${{ item.title }}',
+        status: '${{ data.status }}',
+      }},
+    ],
+  },
+}
+```
+
+Reads an array from current `data` or a named state path, runs nested steps for each item, and collects the final nested result into an array. Nested steps can read `state`, but their local `as` values do not mutate shared state; use `foreach.as` to save the collected result.
 
 #### `filter` — Retain items by expression
 
@@ -339,6 +391,7 @@ Templates use `${{ expression }}` syntax. Available context variables:
 | `index` | `map`, `filter` | Zero-based position |
 | `args` | All | Parsed CLI args (after applying defaults) |
 | `data` | All | Current pipeline data |
+| `state` | All templates | Named values saved by `as` |
 | `root` | `map` | Original data before inline select |
 
 ---
@@ -392,7 +445,36 @@ pipeline: [
 ],
 ```
 
-### Pattern C — Intercepted XHR/fetch
+### Pattern C — Multi-request list-detail
+
+Fetch a list, fetch each item's detail with bounded concurrency, then return the collected detail rows.
+
+```js
+pipeline: [
+  { fetch: { url: 'https://api.example.com/items', as: 'list' } },
+  { select: { from: 'list', path: 'items', as: 'items' } },
+  {
+    foreach: {
+      from: 'items',
+      as: 'details',
+      concurrency: 5,
+      steps: [
+        { fetch: { url: 'https://api.example.com/items/${{ item.id }}' } },
+        { mapOne: {
+          title: '${{ item.title }}',
+          status: '${{ data.status }}',
+        }},
+      ],
+    },
+  },
+  { select: { from: 'details' } },
+  { limit: '${{ args.limit }}' },
+],
+```
+
+Use the same pattern with `browserFetch` after `navigate` when detail APIs need browser cookies.
+
+### Pattern D — Intercepted XHR/fetch
 
 Capture API calls triggered by page interaction.
 
@@ -409,7 +491,7 @@ pipeline: [
 ],
 ```
 
-### Pattern D — DOM extraction
+### Pattern E — DOM extraction
 
 Scrape data directly from rendered HTML.
 
@@ -431,7 +513,7 @@ pipeline: [
 
 ## Browser-Based Adapters
 
-Adapters using `navigate`, `evaluate`, or `intercept` require a running agent Chrome instance with remote debugging enabled. The recommended path is:
+Adapters using `navigate`, `evaluate`, `browserFetch`, or `intercept` require a running agent Chrome instance with remote debugging enabled. The recommended path is:
 
 ```bash
 tap setup
@@ -494,7 +576,7 @@ I want to fetch the top posts from Hacker News.
 
 The skill will:
 
-1. **Identify the fetch pattern** — public API, login-gated, intercepted XHR, or DOM scraping
+1. **Identify the fetch pattern** — public API, login-gated, multi-request list-detail, intercepted XHR, or DOM scraping
 2. **Validate the endpoint** — confirm the API returns the expected data
 3. **Decode the field structure** — map response fields to schema-confirmed output fields
 4. **Confirm the schema** — review field names, raw paths, types, descriptions, units, formats, and examples
@@ -508,9 +590,10 @@ The skill will:
 What data do you want?
   │
   ├─ Public JSON API (curl works)          → Pattern A: direct fetch
-  ├─ Needs browser login/session           → Pattern B: navigate + evaluate(fetch)
-  ├─ XHR hidden behind page interaction    → Pattern C: intercept
-  └─ Data only in DOM                      → Pattern D: navigate + evaluate(DOM)
+  ├─ Needs browser login/session           → Pattern B: navigate + browserFetch
+  ├─ List-detail or enrichment requests    → Pattern C: as + from + foreach
+  ├─ XHR hidden behind page interaction    → Pattern D: intercept
+  └─ Data only in DOM                      → Pattern E: navigate + evaluate(DOM)
 ```
 
 If stuck, the skill has a fallback path for each failure mode (403, empty array, missing fields, etc).

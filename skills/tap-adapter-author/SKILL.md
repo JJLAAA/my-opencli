@@ -24,9 +24,10 @@ START
 判断获取模式（→ references/patterns.md）
   │
   ├─ Pattern A: 公开 JSON API         → 直接 fetch
-  ├─ Pattern B: 需要登录态的 API      → navigate + evaluate(fetch in browser)
-  ├─ Pattern C: XHR/fetch 请求被隐藏  → intercept
-  └─ Pattern D: 数据在页面 DOM 里     → navigate + evaluate(DOM)
+  ├─ Pattern B: 需要登录态的 API      → navigate + browserFetch
+  ├─ Pattern C: 多请求 list-detail    → as + from + foreach
+  ├─ Pattern D: XHR/fetch 请求被隐藏  → intercept
+  └─ Pattern E: 数据在页面 DOM 里     → navigate + evaluate(DOM)
   │
   ▼
 验证 API 端点可访问（curl / fetch 测试）
@@ -63,14 +64,15 @@ DONE
 [ ] 2. 侦察获取模式
        [ ] 在浏览器打开目标页面，打开 DevTools → Network 过滤 XHR/Fetch
        [ ] 观察：请求是否有 JSON 响应？URL 是否可以直接 curl？
-       [ ] 判定 Pattern（A / B / C / D），见 references/patterns.md
+       [ ] 判定 Pattern（A / B / C / D / E），见 references/patterns.md
        ✋ 向用户汇报：Pattern 判断结果 + API 端点 URL，等待确认后再继续
 
 [ ] 3. 验证端点
        [ ] Pattern A：直接 curl 或 fetch 验证
        [ ] Pattern B：需要浏览器 cookie → 检查是否需要先登录
-       [ ] Pattern C：在 Network Tab 找到被拦截的请求 URL
-       [ ] Pattern D：确认数据在 DOM 里可用 document.querySelector 取到
+       [ ] Pattern C：确认列表接口和详情接口，优先用 as/from/foreach 表达
+       [ ] Pattern D：在 Network Tab 找到被拦截的请求 URL
+       [ ] Pattern E：确认数据在 DOM 里可用 document.querySelector 取到
        [ ] 确认：响应 200 + 非 HTML + 含目标数据
 
 [ ] 4. 解码字段
@@ -91,6 +93,7 @@ DONE
 [ ] 6. 组装 pipeline
        [ ] 按 Pattern 选对应模板（references/patterns.md）
        [ ] 用 select 步骤提取嵌套路径（如 data.list）
+       [ ] 多请求场景优先只用 as / from / foreach 三个概念，避免把请求逻辑塞进 evaluate 字符串
        [ ] map 步骤映射字段，用 ${{ }} 表达式
        [ ] map 输出 key 必须覆盖 output.fields 中声明的字段
        [ ] 末尾加 limit: '${{ args.limit }}'
@@ -114,7 +117,7 @@ DONE
 
 | 卡在 | 现象 | 跳去 |
 |------|------|------|
-| Step 2 | Network 没有 XHR | 尝试 Pattern D（DOM 提取）|
+| Step 2 | Network 没有 XHR | 尝试 Pattern E（DOM 提取）|
 | Step 3 | curl 返回 403 | 需要 cookie → 改用 Pattern B |
 | Step 3 | 返回 HTML | API 路径不对，重新看 Network |
 | Step 3 | 返回 `{"data":[]}` 空数组 | 参数不对，检查 Network 请求参数 |
@@ -142,7 +145,7 @@ DONE
 - `output.fields` 是 JSON 输出契约，必须由用户确认后写入；不要从字段名或样例值静默猜最终 schema
 - JSON 输出只包含 `output.fields` 声明的字段；未声明字段会被 runtime 丢弃
 - `columns` 只决定表格列顺序，必须与 schema/map 输出字段对齐
-- 需要浏览器的适配器（Pattern B/C/D）要求本地 Chrome 以 `--remote-debugging-port=9222` 启动
+- 需要浏览器的适配器（Pattern B/D/E，以及使用 `browserFetch` 的 Pattern C）要求本地 Chrome 以 `--remote-debugging-port=9222` 启动
 - 适配器路径：`~/.tap/adapters/<site>/<command>.js`（`<site>` 通常是域名主体，如 `bilibili`、`linuxdo`）
 - 调试过程中的临时 JSON 文件只落在 `/tmp/`，不要留在项目目录
 

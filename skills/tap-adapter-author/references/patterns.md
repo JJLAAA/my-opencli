@@ -1,6 +1,6 @@
 # TAP 适配器 Pattern 参考
 
-四种获取模式，判断后套对应 pipeline 模板。
+五种获取模式，判断后套对应 pipeline 模板。
 
 ---
 
@@ -13,9 +13,10 @@
   ├─ 是 → 可以直接 curl 访问（不需要 cookie）？
   │         ├─ 是 → Pattern A（公开 API）
   │         └─ 否 → 需要登录 cookie？
-  │                   ├─ 是 → Pattern B（浏览器 fetch）
-  │                   └─ 签名/token 不可复现 → Pattern C（intercept）
-  └─ 否 → 数据直接在 HTML 页面里 → Pattern D（DOM 提取）
+  │                   ├─ 是 → Pattern B（browserFetch）
+  │                   └─ 签名/token 不可复现 → Pattern D（intercept）
+  ├─ 单个命令需要 list → detail 多个请求？ → Pattern C（as/from/foreach）
+  └─ 否 → 数据直接在 HTML 页面里 → Pattern E（DOM 提取）
 ```
 
 ---
@@ -77,22 +78,13 @@ export default {
   columns: ['rank', 'title', 'author', 'viewCount'],
   pipeline: [
     { navigate: 'https://example.com' },   // 加载页面以获取 cookie
-    { evaluate: `(async () => {
-        const res = await fetch('https://api.example.com/feed?ps=50', {
-          credentials: 'include',
-        });
-        const json = await res.json();
-        return json.data.list.map(item => ({
-          title:  item.title,
-          author: item.author.name,
-          viewCount: item.stat.view,
-        }));
-      })()` },
+    { browserFetch: { url: 'https://api.example.com/feed?ps=50' } },
+    { select: 'data.list' },
     { map: {
       rank:      '${{ index + 1 }}',
       title:     '${{ item.title }}',
-      author:    '${{ item.author }}',
-      viewCount: '${{ item.viewCount }}',
+      author:    '${{ item.author.name }}',
+      viewCount: '${{ item.stat.view }}',
     }},
     { limit: '${{ args.limit }}' },
   ],
@@ -101,12 +93,59 @@ export default {
 
 **注意**：
 - `navigate` 负责带入 cookie，目标 URL 通常是站点首页或需要登录的任意页
-- `evaluate` 里的 fetch 在浏览器沙箱里执行，自动携带 cookie
-- 可以直接在 evaluate 里做初步字段提取，减少 map 步骤的复杂度
+- `browserFetch` 在浏览器沙箱里执行，默认 `credentials: 'include'`
+- 如果需要多请求聚合，套用 Pattern C，把 `fetch` 换成 `browserFetch`
 
 ---
 
-## Pattern C — 拦截隐藏的 XHR/fetch 请求
+## Pattern C — 多请求 list-detail
+
+**特征**：先拿列表，再按列表项逐个请求详情，或者需要多个独立请求后合并。
+
+```js
+export default {
+  args: [{ name: 'limit', default: 20 }],
+  output: {
+    type: 'list',
+    itemName: 'item',
+    fields: {
+      title: { type: 'string', description: 'Item title.' },
+      status: { type: 'string', description: 'Item status from the detail API.' },
+    },
+  },
+  columns: ['title', 'status'],
+  pipeline: [
+    { fetch: { url: 'https://api.example.com/items?size=50', as: 'list' } },
+    { select: { from: 'list', path: 'items', as: 'items' } },
+    {
+      foreach: {
+        from: 'items',
+        as: 'details',
+        concurrency: 5,
+        steps: [
+          { fetch: { url: 'https://api.example.com/items/${{ item.id }}' } },
+          { mapOne: {
+            title:  '${{ item.title }}',
+            status: '${{ data.status }}',
+          }},
+        ],
+      },
+    },
+    { select: { from: 'details' } },
+    { limit: '${{ args.limit }}' },
+  ],
+};
+```
+
+**注意**：
+- 只记三个概念：`as` 保存结果，`from` 读取命名结果，`foreach` 遍历数组
+- `foreach.from` 可以是任意命名状态路径，如 `items`、`list.items`、`projectDetails`
+- `foreach.as` 保存收集后的数组，供后续步骤继续组合
+- 需要登录态时，先 `navigate`，并把嵌套步骤里的 `fetch` 换成 `browserFetch`
+
+---
+
+## Pattern D — 拦截隐藏的 XHR/fetch 请求
 
 **特征**：API 请求含动态签名/token，无法直接复现，只能在页面行为触发后捕获响应。
 
@@ -157,7 +196,7 @@ export default {
 
 ---
 
-## Pattern D — 从页面 DOM 提取
+## Pattern E — 从页面 DOM 提取
 
 **特征**：数据直接渲染在 HTML 里，无对应 API。
 
@@ -195,5 +234,5 @@ export default {
 
 **注意**：
 - `evaluate` 结果已经是数组时，`map` 步骤主要用于列名对齐，可以省略
-- 如果页面是 SPA 且数据异步加载，navigate 后会等 800ms，通常够用；不够就改用 Pattern B/C
+- 如果页面是 SPA 且数据异步加载，navigate 后会等 800ms，通常够用；不够就改用 Pattern B/D
 - `?.` 可选链很重要，DOM 元素可能不存在
