@@ -75,7 +75,7 @@ Use this contract when adding or changing local TAP state, bundled adapter insta
 
 ```bash
 tap setup [--force]
-tap browser start [--headless]
+tap browser start [--headless] [--foreground]
 tap browser status
 tap browser stop
 tap doctor
@@ -100,6 +100,10 @@ Default local state:
 - Default `cdpEndpoint`: `http://127.0.0.1:9222`
 - Default `chromeProfile`: `~/.chrome-automation-profile`
 - Environment overrides: `TAP_CDP_ENDPOINT`, `TAP_ADAPTERS_DIR`, `TAP_CHROME_PATH`
+- `tap browser start` creates the configured Chrome profile directory before spawning Chrome.
+- `tap browser start` starts headed Chrome minimized by default with `--start-minimized`; `--foreground` opts back into normal headed startup.
+- `tap browser start --headless` keeps the existing no-window mode and must not add `--start-minimized`.
+- Browser-backed adapter runs create an `about:blank` CDP target through the Browser websocket using `Target.createTarget({ url, background: true })` before connecting to that page target. This is a best-effort focus-reduction hint; cleanup still uses `closeTab(base, targetId)`.
 
 Bundled adapter lookup must support both source and npm binary layouts, but the directory may be absent or empty:
 

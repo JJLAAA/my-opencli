@@ -545,7 +545,7 @@ tap doctor
 
 TAP 会自动扫描 pipeline 步骤判断是否需要浏览器，每次运行新建一个标签页，结束后自动关闭。
 
-`tap browser start` 默认使用专用自动化 profile（`~/.chrome-automation-profile`），让 Agent 浏览器与日常 Chrome profile 分离。只有某个适配器需要登录态时，才需要在这个 Agent Chrome profile 中登录目标网站一次。之后 TAP 会复用该 profile 的 cookie 和本地状态。
+`tap browser start` 默认使用专用自动化 profile（`~/.chrome-automation-profile`），让 Agent 浏览器与日常 Chrome profile 分离。有头 Chrome 默认以最小化方式启动；如果希望正常打开窗口，使用 `tap browser start --foreground`，如果需要完全隐藏浏览器，使用 `tap browser start --headless`。只有某个适配器需要登录态时，才需要在这个 Agent Chrome profile 中登录目标网站一次。之后 TAP 会复用该 profile 的 cookie 和本地状态。TAP 每次运行会尽量创建后台标签页，并在结束后关闭。
 
 ---
 

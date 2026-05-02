@@ -539,7 +539,7 @@ tap browser start
 tap doctor
 ```
 
-`tap browser start` uses a dedicated automation profile (`~/.chrome-automation-profile` by default) so agent browsing is separate from your daily Chrome profile. Log into target sites inside this agent Chrome profile only when an adapter needs login state. TAP auto-detects whether an adapter needs the browser by scanning its pipeline steps. A new tab is opened per run and closed when done.
+`tap browser start` uses a dedicated automation profile (`~/.chrome-automation-profile` by default) so agent browsing is separate from your daily Chrome profile. Headed Chrome starts minimized by default; use `tap browser start --foreground` if you want the window opened normally, or `tap browser start --headless` for a fully hidden browser. Log into target sites inside this agent Chrome profile only when an adapter needs login state. TAP auto-detects whether an adapter needs the browser by scanning its pipeline steps. A background tab is opened per run where Chrome supports it and closed when done.
 
 ---
 

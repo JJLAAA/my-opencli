@@ -1,0 +1,5 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Browser command and CDP module contracts"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "CDP errors should propagate and cleanup remains best-effort"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Core module coding standards"}

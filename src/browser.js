@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
@@ -25,9 +25,14 @@ export function findChrome() {
 export function browserHelp(command) {
   if (command === 'start') {
     return [
-      'Usage: tap browser start [--headless]',
+      'Usage: tap browser start [--headless] [--foreground]',
       '',
       'Starts an agent Chrome with remote debugging enabled.',
+      'Headed Chrome starts minimized by default to reduce focus stealing.',
+      '',
+      'Options:',
+      '  --headless     Run Chrome without a visible window',
+      '  --foreground   Start headed Chrome normally instead of minimized',
     ].join('\n');
   }
 
@@ -89,6 +94,8 @@ export async function startBrowser(options = {}) {
   const config = readConfig();
   const endpoint = configuredCdpEndpoint();
   const profile = configuredChromeProfile();
+  mkdirSync(profile, { recursive: true });
+
   const args = [
     `--remote-debugging-port=${portFromEndpoint(endpoint)}`,
     `--user-data-dir=${profile}`,
@@ -96,7 +103,11 @@ export async function startBrowser(options = {}) {
     '--no-default-browser-check',
   ];
 
-  if (options.headless) args.push('--headless=new');
+  if (options.headless) {
+    args.push('--headless=new');
+  } else if (!options.foreground) {
+    args.push('--start-minimized');
+  }
 
   const child = spawn(chrome, args, {
     detached: true,
@@ -109,6 +120,8 @@ export async function startBrowser(options = {}) {
     endpoint,
     chrome,
     profile,
+    minimized: !options.headless && !options.foreground,
+    headless: Boolean(options.headless),
     configuredProfile: config.chromeProfile,
   };
 }
@@ -148,6 +161,7 @@ export function formatBrowserStart(result) {
     `Endpoint: ${result.endpoint}`,
     `Chrome: ${result.chrome}`,
     `Profile: ${result.profile}`,
+    `Mode: ${result.headless ? 'headless' : result.minimized ? 'headed minimized' : 'headed foreground'}`,
   ].join('\n');
 }
 

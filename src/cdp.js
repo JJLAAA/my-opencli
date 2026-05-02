@@ -185,10 +185,28 @@ class CDPSession {
 
 export async function openSession() {
   const base = configuredCdpEndpoint();
-  const target = await httpRequest(`${base}/json/new`, 'PUT');
+  const version = await cdpVersion(base);
+  if (!version?.webSocketDebuggerUrl) throw new Error(`CDP endpoint does not expose Browser websocket: ${base}`);
+
+  const browserSession = new CDPSession(version.webSocketDebuggerUrl);
+  await browserSession.connect();
+  let targetId;
+  try {
+    ({ targetId } = await browserSession.send('Target.createTarget', {
+      url: 'about:blank',
+      background: true,
+    }));
+  } finally {
+    browserSession.close();
+  }
+
+  const targets = await httpRequest(`${base}/json/list`);
+  const target = targets.find(entry => entry.id === targetId);
+  if (!target?.webSocketDebuggerUrl) throw new Error(`Created target is not available through CDP: ${targetId}`);
+
   const session = new CDPSession(target.webSocketDebuggerUrl);
   await session.connect();
-  return { session, targetId: target.id, base };
+  return { session, targetId, base };
 }
 
 export async function closeTab(base, targetId) {

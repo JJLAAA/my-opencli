@@ -154,7 +154,7 @@ async function runBrowserCommand(tokens) {
     }
 
     if (command === 'start') {
-      const options = parseBooleanFlags(rest, ['headless'], browserHelp('start'));
+      const options = parseBooleanFlags(rest, ['headless', 'foreground'], browserHelp('start'));
       console.log(formatBrowserStart(await startBrowser(options)));
       process.exit(0);
     }
