@@ -31,21 +31,27 @@ bun run bin/cli.js <site> <command> --limit 5 --format json
 - **`src/executor.js`** — Pipeline execution engine. `executePipeline(steps, args, session)` runs steps sequentially, threading `data` and `state` through. Steps can save results with `as` and read them later with `from`. Template expressions use `${{ expr }}` syntax with context vars: `item`, `index`, `args`, `data`, `state`, `root`.
 - **`src/cdp.js`** — Chrome DevTools Protocol wrapper. `CDPSession` class + `openSession()`/`closeTab()`. Manages WebSocket communication, page navigation, JS evaluation, and network interception (patches `fetch` and `XMLHttpRequest` in-page).
 - **`src/adapters.js`** — Adapter discovery and loading. `resolveAdapterPath()` searches directories in priority order (see below). `listAdapters()` scans all directories and deduplicates by site/command.
-- **`src/output.js`** — `printOutput()` renders schema-aware JSON envelopes for data commands.
+- **`src/output.js`** — `printOutput()` renders schema-aware JSON envelopes for data commands. `validateJsonOutputSchema()` checks adapter output against declared fields.
+- **`src/schema.js`** — Machine-readable command schema generation. `buildGlobalSchema()` lists all adapter + management commands. `buildAdapterCommandSchema()` / `buildManagementCommandSchema()` produce per-command schemas with args, types, constraints. `inferType()` / `normalizeArg()` normalize arg definitions. Surfaces warnings for missing arg descriptions.
 - **`src/help.js`** — Generates help text at global, site, and command levels.
 - **`src/browser.js`** — Manages the agent Chrome lifecycle: `startChrome()`, `stopChrome()`, `browserStatus()`. Uses a dedicated `~/.chrome-automation-profile` to isolate agent browsing from the user's daily Chrome. `startChrome` supports `--foreground` (normal window) and `--headless` (hidden) flags; default is minimized.
-- **`src/setup.js`** — `runSetup()` initializes `~/.tap/`, writes default `config.json`, installs bundled adapters.
+- **`src/setup.js`** — `runSetup()` initializes `~/.tap/`, `~/.tap/adapters/`, `~/.tap/logs/`, and writes default `config.json`.
 - **`src/doctor.js`** — Diagnoses local setup (config, adapters, Chrome, CDP connectivity).
 - **`src/skills.js`** — `installSkill()` copies the bundled skill to AI assistant skill directories (Claude Code, Codex).
 - **`src/bundled-skills.js`** — Embeds the `tap-adapter-author` skill in the standalone binary.
 - **`src/config.js`** — `readConfig()`, `getConfigDir()`, `getCDPEndpoint()`. Reads `~/.tap/config.json`.
 
+### Other Directories
+- **`skills/tap-adapter-author/`** — Bundled AI skill for adapter authoring.
+- **`docs/`** — Design notes, diagrams, and roadmaps.
+- **`npm/`** — Cross-compiled binaries and npm package helpers.
+- **`scripts/`** — Build scripts (e.g., `build-npm.js`).
+
 ### Adapter Resolution (Search Order)
 1. `TAP_ADAPTERS_DIR` env var (if set)
 2. `~/.tap/adapters/` (user adapters)
-3. `adapters/` in repo root (built-in)
 
-User adapters override built-ins when both exist for the same site/command.
+Use `TAP_ADAPTERS_DIR` for development or workflow-owned adapter directories; otherwise install adapters under `~/.tap/adapters/`.
 
 ### Adapter Shape
 ```js
@@ -123,3 +129,12 @@ When `--format json` is set, errors produce `{ error: { code, message, suggestio
 
 ## Commit Style
 Scoped Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `chore(task):`.
+
+## Response Language
+Always answer in Chinese (中文).
+
+## Coding Style
+ESM JavaScript with explicit `import`/`export`, semicolons, 2-space indentation. Filenames lowercase and descriptive. Prefer small pipeline-oriented objects over deeply nested imperative logic in adapters.
+
+## Documentation Sync
+When changing CLI capabilities (commands, flags, output envelopes, schemas, exit codes, structured errors, browser behavior, adapter contracts, setup flows, environment variables), update both `README.md` and `README.zh.md` in the same change.

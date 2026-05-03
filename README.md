@@ -18,6 +18,20 @@ TAP's value is turning data and operations that already exist in business system
 
 The goal is to let agents work with real business context for querying, diagnosis, summarization, troubleshooting, and decision support without forcing them to understand complex UIs or write one-off scrapers.
 
+## Design Decision: Data Access Layer, Not a Trigger Skill
+
+TAP is intended to be embedded into other agent workflows as a structured data access layer. It should not require a dedicated heuristic "use TAP" skill that tries to infer every possible data-fetching intent.
+
+Business or domain skills should own intent recognition. When a workflow needs structured read-only data from a website, feed, community, or business system, that workflow can check TAP first:
+
+```bash
+tap schema
+tap schema <site> <command>
+tap <site> <command> [--key value]
+```
+
+If a relevant adapter exists, the workflow should prefer TAP over manual browsing, one-off scraping code, or ad hoc HTTP scripts. If no adapter matches, the workflow should continue with its normal data acquisition path, or use `tap-adapter-author` only when the user wants to turn the source into a reusable TAP adapter.
+
 ## How It Works
 
 TAP separates **what to fetch** from **how to fetch it**:
@@ -76,7 +90,7 @@ Initialize user-owned TAP files explicitly:
 tap setup
 ```
 
-`tap setup` creates `~/.tap/`, writes a default `~/.tap/config.json`, and installs bundled adapters into `~/.tap/adapters/` when bundled adapters exist. Existing adapter files are kept unless you pass `--force`.
+`tap setup` creates `~/.tap/`, `~/.tap/adapters/`, `~/.tap/logs/`, and a default `~/.tap/config.json`. Existing config is kept unless you pass `--force`.
 
 ---
 
@@ -93,31 +107,55 @@ tap setup --force
 # Diagnose local setup
 tap doctor
 
+# Discover machine-readable command contracts
+tap schema
+tap schema <site> <command>
+tap schema browser start
+
 # Manage agent Chrome
 tap browser start
 tap browser status
 tap browser stop
 
 # List commands for a site after installing an adapter
-tap help example
+tap help <site>
 
 # Show command options
-tap help example list
+tap help <site> <command>
 # or:
-tap example list --help
+tap <site> <command> --help
 
-# Run a command
-tap example list
-tap example list --limit 10
+# Run an adapter command
+tap <site> <command>
+tap <site> <command> --limit 10
 ```
 
 ### Output Format
 
 | Flag | Description |
 |------|-------------|
-| _(default)_ / `--format json` | JSON envelope with `meta`, `schema`, and `items` for agent-friendly parsing |
+| _(default)_ / `--format json` | JSON envelope with `meta`, `schema`, and `items` for data commands |
 
-JSON is the only supported command output format. `--format json` is accepted for explicitness, but it is optional for all commands.
+JSON is the only supported output format for data commands, and management commands also print JSON. `--format json` is accepted for explicitness, but it is optional for those commands. Help commands intentionally print human-readable text.
+
+### Agent Contract Discovery
+
+Agents should discover commands and arguments from `tap schema` instead of scraping help text.
+
+```bash
+# List adapter and management commands
+tap schema
+
+# Inspect one adapter command
+tap schema <site> <command>
+
+# Inspect one management command
+tap schema browser start
+tap schema doctor
+```
+
+`tap schema` returns JSON with `meta.schemaVersion` and a `commands` array. Each command includes a `schemaCommand` field that points to the command-specific schema. Command schemas include argument flags, types, defaults, required markers, enum/range constraints, and output schema when applicable.
+For management command schemas, pass only the command words shown by `tap schema` (for example `tap schema browser start`); adapter flags are not part of schema lookup.
 
 ### Exit Codes
 
@@ -129,7 +167,7 @@ JSON is the only supported command output format. `--format json` is accepted fo
 | 3 | config_error | Missing or invalid TAP setup | Run `tap setup` |
 | 4 | browser_error | Chrome/CDP unavailable | Run `tap browser status` / `tap browser start` |
 | 5 | upstream_error | Network or remote API failure | Retry if `retryable: true` |
-| 6 | adapter_contract_error | Adapter schema invalid | Fix adapter |
+| 6 | adapter_contract_error / adapter_load_error | Adapter output schema invalid, or adapter file cannot be loaded | Fix adapter `output.fields`, JavaScript syntax, or module export |
 
 ### Structured Errors
 
@@ -146,6 +184,8 @@ CLI failures produce a JSON error on stderr:
   }
 }
 ```
+
+Adapter load failures include the adapter path and, when TAP can detect the issue, line-level diagnostics in `error.details.diagnostics`.
 
 ### JSON Management Commands
 
@@ -176,7 +216,7 @@ tap setup
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `TAP_CDP_ENDPOINT` | `http://127.0.0.1:9222` | Chrome DevTools Protocol endpoint for browser-based adapters |
-| `TAP_ADAPTERS_DIR` | _(none)_ | Additional directory to search for adapters (takes priority over user and built-in adapters) |
+| `TAP_ADAPTERS_DIR` | _(none)_ | Additional directory to search for adapters (takes priority over user adapters) |
 | `TAP_CHROME_PATH` | _(auto-detected)_ | Chrome executable path used by `tap browser start` |
 
 ### Adapter Search Order
@@ -185,12 +225,10 @@ When `TAP_ADAPTERS_DIR` is set:
 
 1. `$TAP_ADAPTERS_DIR/<site>/<command>.js`
 2. `~/.tap/adapters/<site>/<command>.js`
-3. `<repo>/adapters/<site>/<command>.js` (built-ins)
 
 Without `TAP_ADAPTERS_DIR`:
 
 1. `~/.tap/adapters/<site>/<command>.js`
-2. `<repo>/adapters/<site>/<command>.js` (built-ins)
 
 The first match wins.
 
@@ -205,8 +243,25 @@ The first match wins.
 export default {
   description: 'Short description shown in help.',
   args: [
-    { name: 'limit', default: 20, description: 'Max items to return.' },
-    { name: 'keyword', required: true, description: 'Search term.' },
+    {
+      name: 'limit',
+      type: 'integer',
+      default: 20,
+      minimum: 1,
+      maximum: 100,
+      description: 'Max items to return.',
+    },
+    {
+      name: 'sort',
+      enum: ['hot', 'new'],
+      default: 'hot',
+      description: 'Sort order.',
+    },
+    {
+      name: 'keyword',
+      required: true,
+      description: 'Search term.',
+    },
   ],
   output: {
     type: 'list',
@@ -229,9 +284,26 @@ export default {
 | Field | Required | Description |
 |-------|----------|-------------|
 | `description` | No | Shown in `tap help <site> <command>` |
-| `args` | No | CLI params with defaults and descriptions |
+| `args` | No | CLI params with defaults, descriptions, and validation metadata |
 | `output.fields` | Yes for JSON output | Machine-readable field contract used to build the JSON schema |
-| `pipeline` | Yes | Ordered array of steps |
+| `pipeline` | Yes to run a data command | Ordered array of steps executed by the pipeline engine |
+
+### Argument Contract
+
+Adapter args are both documentation and runtime validation. Declare enough metadata for an agent to call the command without guessing.
+
+| Arg field | Description |
+|-----------|-------------|
+| `name` | Flag name without `--` |
+| `description` | Human/agent-facing meaning of the argument |
+| `required` | When `true`, missing values fail with exit code 2 |
+| `default` | Value applied before pipeline execution |
+| `type` | `string`, `boolean`, `integer`, or `number`; inferred from `default` when omitted |
+| `enum` | Allowed values; invalid values fail before the adapter runs |
+| `minimum` / `maximum` | Numeric bounds for `integer` and `number` args |
+| `format` / `examples` | Extra schema hints surfaced by `tap schema` |
+
+For adapter execution, unknown flags, invalid types, enum mismatches, out-of-range numbers, and missing required args produce structured JSON errors on stderr with actionable suggestions.
 
 ### JSON Output Contract
 
@@ -265,7 +337,7 @@ Data commands print a JSON envelope:
 }
 ```
 
-The runtime does not infer field meaning from row keys. JSON output requires explicit `output.fields`, and `items` only includes fields declared there. Extra fields produced by the pipeline are dropped from JSON output.
+The runtime does not infer field meaning from row keys. JSON output requires explicit `output.fields`, and `items` only includes fields declared there. Extra fields produced by the pipeline are dropped from JSON output. This `output.fields` contract is validated before a data command runs; malformed pipeline definitions fail during execution.
 
 ### Pipeline Steps
 
@@ -675,7 +747,7 @@ If stuck, the skill has a fallback path for each failure mode (403, empty array,
 TAP no longer ships site-specific example adapters by default. Use `tap-adapter-author` to create a schema-confirmed adapter under `~/.tap/adapters/<site>/<command>.js`, then run it:
 
 ```bash
-tap example list --limit 5
+tap <site> <command> --limit 5
 ```
 
 ---
@@ -691,13 +763,17 @@ tap/
 │   ├── cdp.js              # Chrome DevTools Protocol session
 │   ├── adapters.js         # Adapter discovery and loading
 │   ├── help.js             # Help text generation
+│   ├── schema.js           # Machine-readable command schema generation
+│   ├── bundled-skills.js   # Embedded skill assets for compiled binaries
 │   └── output.js           # JSON formatter
-├── adapters/               # Optional built-in adapters
-└── skills/                 # Bundled assistant skills
-    └── tap-adapter-author/
+├── skills/                 # Source copy of bundled assistant skills
+│   └── tap-adapter-author/
+└── npm/
+    └── skills/             # npm package copy of bundled assistant skills
+        └── tap-adapter-author/
 ```
 
-User adapters live in `~/.tap/adapters/` and take precedence over built-ins.
+User adapters live in `~/.tap/adapters/`. Use `TAP_ADAPTERS_DIR` to point TAP at a custom adapter directory during development or from another workflow.
 
 ---
 

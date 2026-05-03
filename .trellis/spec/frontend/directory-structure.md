@@ -13,20 +13,17 @@
 ## Directory Layout
 
 ```
-adapters/
-├── bilibili/
-│   └── hot.js       # bilibili hot videos
-└── linuxdo/
-    └── news.js      # linux.do news feed
+~/.tap/adapters/
+└── <site>/
+    └── <command>.js
 ```
 
 At runtime, adapters are searched in this order:
 
 1. `$TAP_ADAPTERS_DIR/<site>/<command>.js` when `TAP_ADAPTERS_DIR` is set
 2. `~/.tap/adapters/<site>/<command>.js`
-3. `<repo>/adapters/<site>/<command>.js` for built-in adapters
 
-The first matching file wins, so user adapters override built-ins by default.
+The first matching file wins. TAP does not load adapters from the source repo or bundled package assets by default.
 
 ---
 
@@ -44,8 +41,8 @@ Use this contract when changing adapter discovery, adding an adapter source, or 
 
 ### 3. Contracts
 
-- With `TAP_ADAPTERS_DIR`: search `$TAP_ADAPTERS_DIR`, then `~/.tap/adapters`, then built-ins.
-- Without `TAP_ADAPTERS_DIR`: search `~/.tap/adapters`, then built-ins.
+- With `TAP_ADAPTERS_DIR`: search `$TAP_ADAPTERS_DIR`, then `~/.tap/adapters`.
+- Without `TAP_ADAPTERS_DIR`: search `~/.tap/adapters`.
 - Duplicate directory paths are de-duplicated before filtering.
 - Missing directories are ignored.
 - The first existing adapter file wins; later directories do not override it.
@@ -54,20 +51,19 @@ Use this contract when changing adapter discovery, adding an adapter source, or 
 
 | Case | Expected Behavior |
 |------|-------------------|
-| User and built-in both provide the same command | User adapter path wins |
 | `TAP_ADAPTERS_DIR` and user both provide the same command | `TAP_ADAPTERS_DIR` path wins |
-| Only built-in provides the command | Built-in path wins |
+| Adapter exists only under repo `adapters/` | Not discovered unless `TAP_ADAPTERS_DIR` points there |
 | No directory provides the command | `resolveAdapterPath()` returns `null` |
 
 ### 5. Good/Base/Bad Cases
 
-- Good: installing `~/.tap/adapters/bilibili/hot.js` overrides built-in `adapters/bilibili/hot.js`.
-- Base: using bundled adapters works when `~/.tap/adapters` is absent.
-- Bad: placing a user adapter under `~/.tap/adapters` but resolving the built-in first.
+- Good: installing `~/.tap/adapters/example/list.js` makes `tap example list` discoverable.
+- Base: `TAP_ADAPTERS_DIR=/repo/adapters tap example list` uses a workflow-owned adapter directory before user adapters.
+- Bad: relying on repo-root `adapters/` without setting `TAP_ADAPTERS_DIR`.
 
 ### 6. Tests Required
 
-- Assert `resolveAdapterPath('bilibili', 'hot')` returns the home adapter when both home and built-in files exist.
+- Assert `resolveAdapterPath('example', 'list')` returns the home adapter when it exists.
 - Assert `TAP_ADAPTERS_DIR` returns before the home adapter.
 - Assert unknown commands return `null`.
 
@@ -76,13 +72,13 @@ Use this contract when changing adapter discovery, adding an adapter source, or 
 #### Wrong
 
 ```js
-[BUILTIN_ADAPTERS_DIR, join(homedir(), '.tap', 'adapters')]
+[join(rootDir, 'adapters'), join(homedir(), '.tap', 'adapters')]
 ```
 
 #### Correct
 
 ```js
-[join(homedir(), '.tap', 'adapters'), BUILTIN_ADAPTERS_DIR]
+[join(homedir(), '.tap', 'adapters')]
 ```
 
 ---
@@ -91,11 +87,10 @@ Use this contract when changing adapter discovery, adding an adapter source, or 
 
 - Site directory: lowercase, no hyphens (e.g., `bilibili`, `linuxdo`, `hackernews`)
 - Command file: lowercase, no hyphens (e.g., `hot.js`, `news.js`, `top.js`)
-- Path pattern: `adapters/<site>/<command>.js`
+- Path pattern: `~/.tap/adapters/<site>/<command>.js`
 
 ---
 
 ## Examples
 
-- `adapters/bilibili/hot.js` — CDP-based adapter (navigate + evaluate)
-- `adapters/linuxdo/news.js` — CDP-based adapter (navigate + evaluate using browser fetch)
+- `~/.tap/adapters/example/list.js` — user-installed adapter path

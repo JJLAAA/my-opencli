@@ -1,5 +1,5 @@
 import { openSession, closeTab } from './cdp.js';
-import { listAdapters, loadAdapter } from './adapters.js';
+import { AdapterLoadError, listAdapters, loadAdapter } from './adapters.js';
 import { executePipeline } from './executor.js';
 import { commandHelp, globalHelp, siteHelp } from './help.js';
 import { printOutput, validateJsonOutputSchema } from './output.js';
@@ -123,6 +123,24 @@ function findSite(adapters, site) {
   return adapters.find(entry => entry.site === site);
 }
 
+function failAdapterLoad(error) {
+  fail(error.message, {
+    code: 'adapter_load_error',
+    exitCode: EXIT_ADAPTER,
+    suggestion: error.suggestion,
+    details: error.details,
+  });
+}
+
+async function loadAdapterOrFail(site, command) {
+  try {
+    return await loadAdapter(site, command);
+  } catch (error) {
+    if (error instanceof AdapterLoadError) failAdapterLoad(error);
+    throw error;
+  }
+}
+
 function needsBrowserSession(pipeline = []) {
   return pipeline.some(step => {
     if ('navigate' in step || 'evaluate' in step || 'intercept' in step || 'browserFetch' in step) {
@@ -133,7 +151,7 @@ function needsBrowserSession(pipeline = []) {
 }
 
 async function printCommandHelp(site, command, siteEntry) {
-  const loaded = await loadAdapter(site, command);
+  const loaded = await loadAdapterOrFail(site, command);
   if (!loaded)
     fail(`Unknown command: ${site} ${command}\n\n${siteHelp(site, siteEntry.commands)}`, {
       code: 'unknown_command', exitCode: EXIT_USAGE,
@@ -255,7 +273,7 @@ async function runSchemaCommand(tokens) {
   if (!command)
     fail('Missing command. Usage: tap schema <site> <command>', { code: 'usage_error', exitCode: EXIT_USAGE });
 
-  const loaded = await loadAdapter(site, command);
+  const loaded = await loadAdapterOrFail(site, command);
   if (!loaded)
     fail(`Unknown command: ${site} ${command}`, { code: 'unknown_command', exitCode: EXIT_USAGE });
 
@@ -394,7 +412,7 @@ export async function runCli(argv = process.argv.slice(2)) {
     await printCommandHelp(site, helpCommand, siteEntry);
   }
 
-  const loaded = await loadAdapter(site, command);
+  const loaded = await loadAdapterOrFail(site, command);
   if (!loaded)
     fail(`Unknown command: ${site} ${command}\n\n${siteHelp(site, siteEntry.commands)}`, {
       code: 'unknown_command', exitCode: EXIT_USAGE,

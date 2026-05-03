@@ -34,13 +34,14 @@ Adapters are simple data files. The bar is: correct shape, correct pipeline ops,
 
 ```bash
 # Install adapter
-cp adapters/bilibili/hot.js ~/.tap/adapters/bilibili/hot.js
+mkdir -p ~/.tap/adapters/example
+cp /path/to/example/list.js ~/.tap/adapters/example/list.js
 
-# Test table output
-./tap bilibili hot --limit 5
+# Test output
+./tap example list --limit 5
 
 # Test JSON output
-./tap bilibili hot --format json
+./tap example list --format json
 ```
 
 Verify:

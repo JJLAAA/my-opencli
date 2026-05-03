@@ -34,5 +34,7 @@ No automated test suite is committed yet. For now, validate changes by running t
 
 Match the existing commit style: scoped Conventional Commit prefixes such as `feat:`, `chore:`, `docs(spec):`, and `chore(task):`. Keep each commit focused on one change. PRs should include a short summary, manual verification steps, and terminal output or screenshots when CLI behavior changes. If you modify workflow or specs under `.trellis/`, mention that explicitly in the PR description.
 
+When changing CLI capabilities, update the README documentation in the same change. This includes new or changed commands, flags, output envelopes, schemas, exit codes, structured errors, browser behavior, adapter contracts, setup flows, and environment variables. Keep `README.md` and `README.zh.md` aligned when the change affects user-facing behavior.
+
 ## response style
 remember,always answer my question in chinese

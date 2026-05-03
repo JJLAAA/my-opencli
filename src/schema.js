@@ -1,4 +1,4 @@
-import { listAdapters, loadAdapter } from './adapters.js';
+import { AdapterLoadError, listAdapters, loadAdapter } from './adapters.js';
 
 const SCHEMA_VERSION = 1;
 
@@ -86,15 +86,29 @@ export async function buildGlobalSchema() {
 
   for (const { site, commands: cmds } of adapters) {
     for (const command of cmds) {
-      const loaded = await loadAdapter(site, command);
-      commands.push({
+      const entry = {
         kind: 'adapter',
         site,
         command,
         name: `${site} ${command}`,
-        description: loaded?.adapter?.description ?? null,
         schemaCommand: `tap schema ${site} ${command}`,
-      });
+      };
+
+      try {
+        const loaded = await loadAdapter(site, command);
+        entry.description = loaded?.adapter?.description ?? null;
+      } catch (error) {
+        if (!(error instanceof AdapterLoadError)) throw error;
+        entry.description = null;
+        entry.loadError = {
+          code: 'adapter_load_error',
+          message: error.message,
+          suggestion: error.suggestion,
+          details: error.details,
+        };
+      }
+
+      commands.push(entry);
     }
   }
 

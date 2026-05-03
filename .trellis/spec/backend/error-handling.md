@@ -20,7 +20,7 @@ Errors are classified into exit codes and always output structured JSON. All err
 | 3 | config_error | `EXIT_CONFIG` | Missing/invalid TAP setup |
 | 4 | browser_error | `EXIT_BROWSER` | Chrome/CDP unavailable |
 | 5 | upstream_error | `EXIT_UPSTREAM` | Network or remote API failure |
-| 6 | adapter_contract_error | `EXIT_ADAPTER` | Invalid adapter output schema |
+| 6 | adapter_contract_error / adapter_load_error | `EXIT_ADAPTER` | Invalid adapter output schema or adapter module cannot load |
 
 ---
 
@@ -93,11 +93,29 @@ fail(error.message, { code: 'upstream_error', exitCode: EXIT_UPSTREAM, retryable
 
 ### Adapter contract errors (exit 6)
 
-Missing `output.fields`, invalid schema. Non-retryable — requires adapter fix.
+Missing `output.fields`, invalid schema, or adapter load failures. Non-retryable — requires adapter fix.
 
 ```js
 fail(error.message, { code: 'adapter_contract_error', exitCode: EXIT_ADAPTER });
 ```
+
+Adapter module import/preflight failures use `adapter_load_error` and must include enough context for an agent to edit the adapter without guessing:
+
+```js
+fail(error.message, {
+  code: 'adapter_load_error',
+  exitCode: EXIT_ADAPTER,
+  suggestion: error.suggestion,
+  details: {
+    site,
+    command,
+    adapterPath,
+    diagnostics: [{ line, column, message, source }],
+  },
+});
+```
+
+Known adapter authoring gotcha: TAP template expressions inside JavaScript backtick strings must escape the dollar sign as `\${{ ... }}`. Otherwise Bun parses `${{ ... }}` as JavaScript template interpolation before TAP can render it. The CLI should preflight this case and return a line-level diagnostic instead of falling through to top-level `internal_error`.
 
 ---
 
@@ -144,6 +162,7 @@ Pipeline errors from `executePipeline` are caught in `runCli()` and classified:
 
 - **Don't use `process.exit()` directly** — use `fail()` so JSON mode is respected.
 - **Don't skip the `code` field** in `fail()` — every call site should specify a stable error code.
+- **Don't let adapter import/build failures reach `bin/cli.js`** — classify them as `adapter_load_error` with `adapterPath` and diagnostics.
 - **Don't catch errors in executor/cdp** unless you can recover. Let them propagate to the catch block in `runCli()`.
 - **Don't throw from `closeTab`** — it's a best-effort cleanup (fire-and-forget).
 - **Don't add fallback data** when a step genuinely failed. Fail loudly.

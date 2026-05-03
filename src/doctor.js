@@ -1,40 +1,10 @@
-import { existsSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { findBuiltinAdaptersDir } from './adapters.js';
+import { existsSync } from 'node:fs';
 import { findChrome } from './browser.js';
 import { browserStatus } from './browser.js';
 import { configPath, logsDir, readConfig, tapDir, userAdaptersDir } from './config.js';
 
-function listFiles(root, base = root, files = []) {
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const path = join(root, entry.name);
-    if (entry.isDirectory()) listFiles(path, base, files);
-    else files.push(relative(base, path));
-  }
-  return files;
-}
-
 function check(label, ok, detail = '') {
   return { label, ok, detail };
-}
-
-function adapterInstallCheck() {
-  const source = findBuiltinAdaptersDir();
-  if (!source) return check('Bundled adapters', true, 'No bundled adapters configured.');
-
-  const files = listFiles(source).filter(file => file.endsWith('.js'));
-  if (!files.length) return check('Bundled adapters', true, 'No bundled adapters configured.');
-
-  const missing = files.filter(file => !existsSync(join(userAdaptersDir(), file)));
-  if (missing.length) {
-    return check(
-      'Bundled adapters installed',
-      false,
-      `Missing ${missing.length} adapter file(s). Run: tap setup`
-    );
-  }
-
-  return check('Bundled adapters installed', true, `${files.length} file(s) present.`);
 }
 
 export function doctorHelp() {
@@ -59,8 +29,6 @@ export async function runDoctor() {
   } catch (error) {
     checks.push(check('Config parse', false, error.message));
   }
-
-  checks.push(adapterInstallCheck());
 
   const chrome = findChrome();
   checks.push(check('Chrome executable', Boolean(chrome), chrome ?? 'Set TAP_CHROME_PATH.'));

@@ -21,7 +21,6 @@ tap/
 │   ├── executor.js     # Pipeline execution engine
 │   ├── skills.js       # Explicit AI assistant skill installation
 │   └── output.js       # Output formatter (table / json)
-├── adapters/           # Optional built-in adapters (may be empty)
 ├── skills/             # TAP-owned bundled assistant skills
 │   └── tap-adapter-author/
 └── tap                 # Compiled bun single-file executable
@@ -69,7 +68,7 @@ Contract:
 
 #### 1. Scope / Trigger
 
-Use this contract when adding or changing local TAP state, bundled adapter installation, browser runtime management, or diagnostics. These commands are user-facing CLI contracts and must stay explicit: package installation must not initialize `~/.tap`.
+Use this contract when adding or changing local TAP state, browser runtime management, or diagnostics. These commands are user-facing CLI contracts and must stay explicit: package installation must not initialize `~/.tap`.
 
 #### 2. Signatures
 
@@ -105,21 +104,15 @@ Default local state:
 - `tap browser start --headless` keeps the existing no-window mode and must not add `--start-minimized`.
 - Browser-backed adapter runs create an `about:blank` CDP target through the Browser websocket using `Target.createTarget({ url, background: true })` before connecting to that page target. This is a best-effort focus-reduction hint; cleanup still uses `closeTab(base, targetId)`.
 
-Bundled adapter lookup must support both source and npm binary layouts, but the directory may be absent or empty:
-
-- `<repo>/adapters`
-- `<dirname(process.execPath)>/adapters`
-- `<dirname(process.execPath)>/../adapters`
-
 Side commands must route in `src/cli.js` before adapter discovery and delegate all behavior to focused `src/` modules.
 
 #### 4. Validation & Error Matrix
 
 | Case | Expected behavior |
 |------|-------------------|
-| `tap setup` and bundled adapters are missing | Still create TAP directories/config; no adapters are installed |
-| `tap setup` finds existing adapter files | Keep them and report skipped files |
-| `tap setup --force` finds existing adapter files | Overwrite bundled adapter files and report installed files |
+| `tap setup` runs without existing local state | Create TAP directories/config; do not install adapters |
+| `tap setup` runs with existing config | Keep config and report `written: false` |
+| `tap setup --force` runs with existing config | Overwrite config and report `written: true` |
 | `tap browser status` cannot reach CDP | Exit non-zero and print endpoint plus connection error |
 | `tap browser start` cannot find Chrome | Exit non-zero and ask user to set `TAP_CHROME_PATH` |
 | `tap browser stop` when CDP is unreachable | Exit zero and report that agent Chrome was not running |
@@ -127,8 +120,8 @@ Side commands must route in `src/cli.js` before adapter discovery and delegate a
 
 #### 5. Good/Base/Bad Cases
 
-- Good: `HOME=/tmp/tap-verify tap setup` creates only files under that HOME and installs bundled adapters when present.
-- Base: running `tap setup` twice skips existing adapters unless `--force` is provided; if no bundled adapters exist, adapter install is a no-op.
+- Good: `HOME=/tmp/tap-verify tap setup` creates only files under that HOME.
+- Base: running `tap setup` twice keeps existing config unless `--force` is provided.
 - Bad: npm `postinstall` writes to `~/.tap` or assistant-specific directories.
 
 #### 6. Tests Required
@@ -149,9 +142,9 @@ HOME=/tmp/tap-verify-npm node npm/run.js setup
 Assertion points:
 
 - Setup creates directories and config in the overridden HOME only.
-- Existing adapter files are skipped without `--force`.
+- Setup output includes `adaptersTarget` and no bundled-adapter install result fields.
 - Doctor reports pass/fail rows and exits non-zero when CDP is unavailable.
-- npm package wrapper can find `npm/adapters`.
+- npm package wrapper can run setup without adapter package assets.
 
 #### 7. Wrong vs Correct
 
