@@ -14,6 +14,7 @@ import {
 import { doctorHelp, runDoctor } from './doctor.js';
 import {
   buildGlobalSchema,
+  buildSiteSchema,
   buildAdapterCommandSchema,
   buildManagementCommandSchema,
   getManagementCommandNames,
@@ -270,8 +271,15 @@ async function runSchemaCommand(tokens) {
 
   // Adapter command: schema <site> <command>
   const [site, command] = tokens;
-  if (!command)
-    fail('Missing command. Usage: tap schema <site> <command>', { code: 'usage_error', exitCode: EXIT_USAGE });
+
+  // Site-level query: schema <site> (no command)
+  if (!command) {
+    const siteSchema = await buildSiteSchema(site);
+    if (!siteSchema)
+      fail(`Unknown site: ${site}`, { code: 'unknown_site', exitCode: EXIT_USAGE, suggestion: 'Run: tap schema', details: { site } });
+    console.log(JSON.stringify(siteSchema, null, 2));
+    process.exit(0);
+  }
 
   const loaded = await loadAdapterOrFail(site, command);
   if (!loaded)

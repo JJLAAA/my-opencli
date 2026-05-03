@@ -80,6 +80,50 @@ function buildOutputSchema(adapter) {
   };
 }
 
+export async function buildSiteSchema(site) {
+  const adapters = listAdapters();
+  const siteEntry = adapters.find(entry => entry.site === site);
+  if (!siteEntry) return null;
+
+  const commands = [];
+
+  for (const command of siteEntry.commands) {
+    const entry = {
+      kind: 'adapter',
+      site,
+      command,
+      name: `${site} ${command}`,
+      schemaCommand: `tap schema ${site} ${command}`,
+    };
+
+    try {
+      const loaded = await loadAdapter(site, command);
+      entry.description = loaded?.adapter?.description ?? null;
+    } catch (error) {
+      if (!(error instanceof AdapterLoadError)) throw error;
+      entry.description = null;
+      entry.loadError = {
+        code: 'adapter_load_error',
+        message: error.message,
+        suggestion: error.suggestion,
+        details: error.details,
+      };
+    }
+
+    commands.push(entry);
+  }
+
+  return {
+    meta: {
+      schemaVersion: SCHEMA_VERSION,
+      kind: 'site',
+      site,
+      generatedAt: new Date().toISOString(),
+    },
+    commands,
+  };
+}
+
 export async function buildGlobalSchema() {
   const adapters = listAdapters();
   const commands = [];

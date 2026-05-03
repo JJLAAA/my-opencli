@@ -113,6 +113,7 @@ tap doctor
 
 # 发现机器可读的命令契约
 tap schema
+tap schema <site>
 tap schema <site> <command>
 tap schema browser start
 
@@ -150,6 +151,9 @@ Agent 应优先通过 `tap schema` 发现命令和参数，而不是解析 help 
 # 列出适配器命令和管理命令
 tap schema
 
+# 列出某个站点的所有命令
+tap schema <site>
+
 # 查看某个适配器命令
 tap schema <site> <command>
 
@@ -159,6 +163,9 @@ tap schema doctor
 ```
 
 `tap schema` 返回包含 `meta.schemaVersion` 和 `commands` 数组的 JSON。每个命令都带有 `schemaCommand` 字段，指向命令级 schema。命令级 schema 会包含参数 flag、类型、默认值、必填标记、枚举/范围约束，以及适用时的输出 schema。
+
+`tap schema <site>` 返回站点级 schema，`meta.kind` 为 `"site"`，列出该站点所有命令。每个命令条目包含 `kind`、`site`、`command`、`name`、`description` 和 `schemaCommand`。如果适配器无法加载，该条目会包含 `loadError` 对象而非 description。未知站点会返回 `code: "unknown_site"` 的结构化使用错误。
+
 查看管理命令 schema 时，只传入 `tap schema` 中列出的命令词即可（例如 `tap schema browser start`）；适配器 flag 不属于 schema 查询参数。
 
 ### 退出码

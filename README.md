@@ -109,6 +109,7 @@ tap doctor
 
 # Discover machine-readable command contracts
 tap schema
+tap schema <site>
 tap schema <site> <command>
 tap schema browser start
 
@@ -146,6 +147,9 @@ Agents should discover commands and arguments from `tap schema` instead of scrap
 # List adapter and management commands
 tap schema
 
+# List commands for a site
+tap schema <site>
+
 # Inspect one adapter command
 tap schema <site> <command>
 
@@ -155,6 +159,9 @@ tap schema doctor
 ```
 
 `tap schema` returns JSON with `meta.schemaVersion` and a `commands` array. Each command includes a `schemaCommand` field that points to the command-specific schema. Command schemas include argument flags, types, defaults, required markers, enum/range constraints, and output schema when applicable.
+
+`tap schema <site>` returns a site-level schema with `meta.kind: "site"`, listing all commands for that site. Each command entry includes `kind`, `site`, `command`, `name`, `description`, and `schemaCommand`. If an adapter cannot be loaded, its entry includes a `loadError` object instead of a description. Unknown sites produce a structured usage error with `code: "unknown_site"`.
+
 For management command schemas, pass only the command words shown by `tap schema` (for example `tap schema browser start`); adapter flags are not part of schema lookup.
 
 ### Exit Codes

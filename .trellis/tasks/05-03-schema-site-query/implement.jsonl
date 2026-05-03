@@ -1,0 +1,5 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": "src/schema.js", "reason": "Primary file to add buildSiteSchema()"}
+{"file": "src/cli.js", "reason": "Dispatch site-level schema subcommand"}
+{"file": "src/adapters.js", "reason": "Adapter discovery patterns (listAdapters, loadAdapter, AdapterLoadError)"}

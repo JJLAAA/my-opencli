@@ -1,0 +1,4 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": "src/schema.js", "reason": "Verify buildSiteSchema output shape"}
+{"file": "src/cli.js", "reason": "Verify dispatch and error handling"}
