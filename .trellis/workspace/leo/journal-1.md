@@ -697,3 +697,53 @@ Implemented R1-R6 from Phase 2 PRD: tap schema (global/per-command/management), 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: Add adapter install/list/remove command namespace
+
+**Date**: 2026-05-04
+**Task**: Add adapter install/list/remove command namespace
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Feature | Description |
+|---------|-------------|
+| `tap adapter install <source>` | Install adapter packs from github:/url:/git: sources |
+| `tap adapter list` | List installed packs from manifest |
+| `tap adapter remove <name>` | Remove pack files and manifest entry |
+| Conflict detection | Fail-fast without --force, overwrite tracking with --force |
+| GitHub API redirect | Handle 301 redirects for renamed repos |
+| Security hardening | execFileSync for git clone (no shell injection), URL sanitization |
+| Orphaned file cleanup | Reinstall same pack removes files no longer in new version |
+
+**Updated Files**:
+- `src/adapter-manager.js` — new module (install/list/remove/help)
+- `src/cli.js` — adapter dispatch + runAdapterCommand
+- `src/config.js` — installedAdaptersPath()
+- `src/schema.js` — MANAGEMENT_COMMANDS entries
+- `src/help.js` — globalHelp adapter line
+- `README.md` / `README.zh.md` — adapter management docs
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2a2cfec` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
