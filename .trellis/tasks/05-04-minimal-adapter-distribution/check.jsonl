@@ -1,0 +1,7 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": "src/cli.js", "reason": "verify adapter dispatch added correctly"}
+{"file": "src/config.js", "reason": "verify path helpers used correctly"}
+{"file": "src/adapters.js", "reason": "verify no runtime discovery changes"}
+{"file": "src/schema.js", "reason": "verify schema registration"}
+{"file": "src/help.js", "reason": "verify help text updated"}

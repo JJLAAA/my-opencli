@@ -35,6 +35,23 @@ const MANAGEMENT_COMMANDS = {
       { name: 'target', type: 'string', description: 'Installation target directory.' },
     ],
   },
+  'adapter install': {
+    description: 'Install an adapter pack from a remote source.',
+    args: [
+      { name: 'source', type: 'string', description: 'Source to install from (github:<owner>/<repo>, url:<https-url>, or git:<git-url>).' },
+      { name: 'force', type: 'boolean', description: 'Overwrite existing adapter files.' },
+    ],
+  },
+  'adapter list': {
+    description: 'List installed adapter packs.',
+    args: [],
+  },
+  'adapter remove': {
+    description: 'Remove an installed adapter pack.',
+    args: [
+      { name: 'name', type: 'string', description: 'Name of the adapter pack to remove.' },
+    ],
+  },
 };
 
 export function inferType(def) {

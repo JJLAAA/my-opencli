@@ -20,6 +20,7 @@ import {
   getManagementCommandNames,
   inferType,
 } from './schema.js';
+import { adapterHelp, installAdapter, listInstalledAdapters, removeAdapter } from './adapter-manager.js';
 
 // Exit codes
 const EXIT_USAGE = 2;
@@ -240,6 +241,91 @@ function classifyDoctorExitCode(result) {
   return EXIT_CONFIG;
 }
 
+async function runAdapterCommand(tokens) {
+  const [command, ...rest] = tokens;
+  if (!command || isHelpToken(command)) printHelp(adapterHelp());
+
+  if (command === 'install') {
+    if (rest.some(isHelpToken)) printHelp(adapterHelp('install'));
+    const source = rest.find(t => !t.startsWith('--'));
+    const force = rest.includes('--force');
+    const unknownArgs = rest.filter(t => t.startsWith('--') && t !== '--force');
+    if (unknownArgs.length)
+      fail(`Unknown option: ${unknownArgs[0]}\n\n${adapterHelp('install')}`, { code: 'unknown_option', exitCode: EXIT_USAGE });
+    if (!source)
+      fail('Source is required.\n\n' + adapterHelp('install'), { code: 'missing_adapter_source', exitCode: EXIT_USAGE });
+
+    let result;
+    try {
+      result = await installAdapter(source, { force });
+    } catch (error) {
+      const isUpstream = error.code === 'adapter_pack_download_error' || error.code === 'adapter_pack_clone_error';
+      const isContract = error.code === 'adapter_pack_contract_error' || error.code === 'adapter_file_conflict';
+      const isUsage = error.code === 'unsupported_adapter_source';
+      const exitCode = isUpstream ? EXIT_UPSTREAM : isUsage ? EXIT_USAGE : isContract ? EXIT_ADAPTER : EXIT_ADAPTER;
+
+      if (error.code === 'adapter_file_conflict') {
+        fail(error.message, {
+          code: error.code,
+          exitCode: EXIT_ADAPTER,
+          suggestion: 'Rerun with --force only if you want this source to replace the listed adapter files.',
+          retryable: false,
+          details: error.details,
+        });
+      }
+
+      fail(error.message || error.msg, {
+        code: error.code || 'adapter_install_error',
+        exitCode,
+        suggestion: error.suggestion || null,
+        retryable: isUpstream,
+        details: error.details || {},
+      });
+    }
+
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(0);
+  }
+
+  if (command === 'list') {
+    if (rest.some(isHelpToken)) printHelp(adapterHelp('list'));
+    if (rest.length)
+      fail(`Unknown argument: ${rest[0]}\n\n${adapterHelp('list')}`, { code: 'unknown_argument', exitCode: EXIT_USAGE });
+
+    let result;
+    try {
+      result = listInstalledAdapters();
+    } catch (error) {
+      fail(error.message, { code: error.code || 'adapter_manifest_error', exitCode: EXIT_ADAPTER });
+    }
+
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(0);
+  }
+
+  if (command === 'remove') {
+    if (rest.some(isHelpToken)) printHelp(adapterHelp('remove'));
+    const name = rest.find(t => !t.startsWith('--'));
+    if (!name)
+      fail('Pack name is required.\n\n' + adapterHelp('remove'), { code: 'missing_adapter_name', exitCode: EXIT_USAGE });
+    const unknownArgs = rest.filter(t => t.startsWith('--'));
+    if (unknownArgs.length)
+      fail(`Unknown option: ${unknownArgs[0]}\n\n${adapterHelp('remove')}`, { code: 'unknown_option', exitCode: EXIT_USAGE });
+
+    let result;
+    try {
+      result = removeAdapter(name);
+    } catch (error) {
+      fail(error.message, { code: error.code || 'adapter_remove_error', exitCode: EXIT_ADAPTER });
+    }
+
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(0);
+  }
+
+  fail(`Unknown adapter command: ${command}\n\n${adapterHelp()}`, { code: 'unknown_adapter_command', exitCode: EXIT_USAGE });
+}
+
 async function runDoctorCommand(tokens) {
   if (tokens.some(isHelpToken)) printHelp(doctorHelp());
   if (tokens.length)
@@ -389,6 +475,8 @@ export async function runCli(argv = process.argv.slice(2)) {
   if (tokens[0] === 'help' && tokens[1] === 'setup') printHelp(setupHelp());
   if (tokens[0] === 'browser') await runBrowserCommand(tokens.slice(1));
   if (tokens[0] === 'help' && tokens[1] === 'browser') printHelp(browserHelp(tokens[2]));
+  if (tokens[0] === 'adapter') await runAdapterCommand(tokens.slice(1));
+  if (tokens[0] === 'help' && tokens[1] === 'adapter') printHelp(adapterHelp(tokens[2]));
   if (tokens[0] === 'doctor') await runDoctorCommand(tokens.slice(1));
   if (tokens[0] === 'help' && tokens[1] === 'doctor') printHelp(doctorHelp());
   if (tokens[0] === 'schema') await runSchemaCommand(tokens.slice(1));

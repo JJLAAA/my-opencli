@@ -118,6 +118,14 @@ tap browser start
 tap browser status
 tap browser stop
 
+# Install, list, or remove adapter packs
+tap adapter install github:<owner>/<repo>
+tap adapter install url:<https-url-to-zip-or-tarball>
+tap adapter install git:<git-url>
+tap adapter install git:<git-url> --force
+tap adapter list
+tap adapter remove <pack-name>
+
 # List commands for a site after installing an adapter
 tap help <site>
 
@@ -176,6 +184,8 @@ For management command schemas, pass only the command words shown by `tap schema
 | 5 | upstream_error | Network or remote API failure | Retry if `retryable: true` |
 | 6 | adapter_contract_error / adapter_load_error | Adapter output schema invalid, or adapter file cannot be loaded | Fix adapter `output.fields`, JavaScript syntax, or module export |
 
+Adapter management commands use exit code `2` for usage errors (unknown source format, missing arguments) and exit code `5` for download/clone failures (retryable) and exit code `6` for pack contract errors (invalid `tap-adapter.json`, missing `adapters/` directory) and file conflicts.
+
 ### Structured Errors
 
 CLI failures produce a JSON error on stderr:
@@ -214,6 +224,16 @@ tap browser stop
 # Setup
 tap setup
 # → { "directories": [...], "config": { "path": "...", "written": true }, ... }
+
+# Adapter management
+tap adapter install github:example/tap-adapters
+# → { "ok": true, "action": "install", "pack": {...}, "installed": [...], "overwritten": [], "target": "..." }
+
+tap adapter list
+# → { "packs": [...] }
+
+tap adapter remove <pack-name>
+# → { "ok": true, "action": "remove", "pack": "...", "removed": [...] }
 ```
 
 ---

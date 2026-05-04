@@ -19,6 +19,10 @@ export function userAdaptersDir() {
   return join(tapDir(), 'adapters');
 }
 
+export function installedAdaptersPath() {
+  return join(tapDir(), 'installed-adapters.json');
+}
+
 export function logsDir() {
   return join(tapDir(), 'logs');
 }

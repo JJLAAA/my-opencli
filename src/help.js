@@ -38,6 +38,7 @@ export function globalHelp() {
     '  schema            Show command schemas',
     '  setup             Initialize local TAP files explicitly',
     '  browser           Manage the agent Chrome runtime',
+    '  adapter           Install, list, or remove adapter packs',
     '  doctor            Diagnose local TAP setup',
     '  skill             Install bundled AI assistant skills',
   ];

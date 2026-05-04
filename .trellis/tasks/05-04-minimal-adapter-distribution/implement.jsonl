@@ -1,0 +1,9 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": "src/cli.js", "reason": "CLI dispatch pattern for adapter command"}
+{"file": "src/config.js", "reason": "path helpers tapDir/userAdaptersDir"}
+{"file": "src/adapters.js", "reason": "adapter loading patterns"}
+{"file": "src/schema.js", "reason": "MANAGEMENT_COMMANDS pattern"}
+{"file": "src/help.js", "reason": "help text pattern"}
+{"file": "src/setup.js", "reason": "directory creation pattern"}
+{"file": "src/skills.js", "reason": "copyDir pattern"}

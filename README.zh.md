@@ -122,6 +122,14 @@ tap browser start
 tap browser status
 tap browser stop
 
+# 安装、列表或移除适配器包
+tap adapter install github:<owner>/<repo>
+tap adapter install url:<https-url-to-zip-or-tarball>
+tap adapter install git:<git-url>
+tap adapter install git:<git-url> --force
+tap adapter list
+tap adapter remove <pack-name>
+
 # 安装适配器后查看某个站点的命令
 tap help <site>
 
@@ -180,6 +188,8 @@ tap schema doctor
 | 5 | upstream_error | 网络或远程 API 失败 | `retryable: true` 时可重试 |
 | 6 | adapter_contract_error / adapter_load_error | 适配器输出 schema 无效，或适配器文件无法加载 | 修复适配器的 `output.fields`、JavaScript 语法或模块导出 |
 
+适配器管理命令使用退出码 `2` 表示用法错误（未知源格式、缺少参数），退出码 `5` 表示下载/克隆失败（可重试），退出码 `6` 表示包契约错误（无效的 `tap-adapter.json`、缺少 `adapters/` 目录）和文件冲突。
+
 ### 结构化错误
 
 CLI 失败会在 stderr 输出 JSON 错误：
@@ -218,6 +228,16 @@ tap browser stop
 # 初始化
 tap setup
 # → { "directories": [...], "config": { "path": "...", "written": true }, ... }
+
+# 适配器管理
+tap adapter install github:example/tap-adapters
+# → { "ok": true, "action": "install", "pack": {...}, "installed": [...], "overwritten": [], "target": "..." }
+
+tap adapter list
+# → { "packs": [...] }
+
+tap adapter remove <pack-name>
+# → { "ok": true, "action": "remove", "pack": "...", "removed": [...] }
 ```
 
 ---
