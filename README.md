@@ -92,6 +92,15 @@ tap setup
 
 `tap setup` creates `~/.tap/`, `~/.tap/adapters/`, `~/.tap/logs/`, and a default `~/.tap/config.json`. Existing config is kept unless you pass `--force`.
 
+**Installation scope:** installing the TAP binary, including via npm package distributions, installs only the CLI runtime. Adapter packs and assistant skills are intentionally installed explicitly:
+
+```bash
+tap adapter install github:<owner>/<repo>
+tap skill install codex
+```
+
+Use `tap skill install claude-code` instead if you use Claude Code.
+
 ---
 
 ## Usage

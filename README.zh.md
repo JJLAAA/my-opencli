@@ -96,6 +96,15 @@ tap setup
 
 `tap setup` 会创建 `~/.tap/`、`~/.tap/adapters/`、`~/.tap/logs/`，并写入默认 `~/.tap/config.json`。已有配置默认保留，只有传入 `--force` 才会覆盖。
 
+**安装范围：** 安装 TAP 二进制文件，包括通过 npm 包分发安装时，只会安装 CLI runtime。适配器包和 assistant skill 都需要显式安装：
+
+```bash
+tap adapter install github:<owner>/<repo>
+tap skill install codex
+```
+
+如果使用 Claude Code，则改用 `tap skill install claude-code`。
+
 ---
 
 ## 使用
