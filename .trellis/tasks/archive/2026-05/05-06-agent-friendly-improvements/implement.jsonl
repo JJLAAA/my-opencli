@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": "src/help.js", "reason": "commandHelp() 需增加 Examples 段渲染"}
+{"file": "src/output.js", "reason": "projectRows/formatJsonEnvelope 需支持 fieldMask 参数"}
+{"file": "src/cli.js", "reason": "peekFields/stripFields + validateAdapterArgs 需识别 --fields"}
+{"file": "src/schema.js", "reason": "schema 中注明 --fields 可发现性"}
