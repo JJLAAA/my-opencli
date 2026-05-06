@@ -30,6 +30,16 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org/
 
+      - name: Validate npm token
+        if: ${{ !inputs.dry_run }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::Missing npm publish token. Set repository secret NPM_TOKEN, or NODE_AUTH_TOKEN, to an npm automation/access token with publish permission."
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.NODE_AUTH_TOKEN }}
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -49,5 +59,5 @@ jobs:
       - name: Publish packages
         run: bun run scripts/publish-npm.js
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.NODE_AUTH_TOKEN }}
           NPM_PUBLISH_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
