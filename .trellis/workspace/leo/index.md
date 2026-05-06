@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 18
-- **Last Active**: 2026-05-04
+- **Total Sessions**: 19
+- **Last Active**: 2026-05-06
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~749 | Active |
+| `journal-1.md` | ~784 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 19 | 2026-05-06 | Complete split npm binary packages | `7649b20`, `b511855`, `9a6d99c` | `main` |
 | 18 | 2026-05-04 | Add adapter install/list/remove command namespace | `2a2cfec` | `main` |
 | 17 | 2026-05-03 | Agent CLI Phase 2: schema introspection & arg validation | `ea5bf46` | `main` |
 | 16 | 2026-05-02 | Agent-friendly CLI phase 1 | `46e737d` | `main` |

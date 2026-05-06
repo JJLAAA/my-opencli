@@ -747,3 +747,38 @@ Implemented R1-R6 from Phase 2 PRD: tap schema (global/per-command/management), 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: Complete split npm binary packages
+
+**Date**: 2026-05-06
+**Task**: Complete split npm binary packages
+**Branch**: `main`
+
+### Summary
+
+Completed split npm binary package publishing flow: platform optional packages, small main npm package, dry-run verification, explicit npm token handling, and workflow token validation.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7649b20` | (see git log) |
+| `b511855` | (see git log) |
+| `9a6d99c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
