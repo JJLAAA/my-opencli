@@ -12,6 +12,7 @@ import {
   stopBrowser,
 } from './browser.js';
 import { doctorHelp, runDoctor } from './doctor.js';
+import { versionText } from './version.js';
 import {
   buildGlobalSchema,
   buildSiteSchema,
@@ -36,6 +37,10 @@ function fail(message, { code = 'general_error', exitCode = 1, suggestion = null
 
 function isHelpToken(value) {
   return value === 'help' || value === '--help' || value === '-h';
+}
+
+function isVersionToken(value) {
+  return value === 'version' || value === '--version' || value === '-v';
 }
 
 function peekFormat(tokens) {
@@ -118,6 +123,11 @@ function parseBooleanFlags(rest, allowed, helpText) {
 
 function printHelp(text) {
   console.log(text);
+  process.exit(0);
+}
+
+function printVersion() {
+  console.log(versionText());
   process.exit(0);
 }
 
@@ -469,6 +479,7 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
   const tokens = stripFormat(argv);
 
+  if (tokens.length === 1 && isVersionToken(tokens[0])) printVersion();
   if (tokens[0] === 'skill') runSkillCommand(tokens.slice(1));
   if (tokens[0] === 'help' && tokens[1] === 'skill') printHelp(skillHelp(tokens[2]));
   if (tokens[0] === 'setup') runSetupCommand(tokens.slice(1));

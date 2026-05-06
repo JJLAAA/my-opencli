@@ -20,17 +20,14 @@ The goal is to let agents work with real business context for querying, diagnosi
 
 ## Design Decision: Data Access Layer, Not a Trigger Skill
 
-TAP is intended to be embedded into other agent workflows as a structured data access layer. It should not require a dedicated heuristic "use TAP" skill that tries to infer every possible data-fetching intent.
+TAP is intended to be embedded into other agent workflows as a structured data access layer. It does not include a heuristic "use TAP" skill that tries to infer every possible data-fetching intent, because TAP is never meant to be spontaneously discovered by an agent.
 
-Business or domain skills should own intent recognition. When a workflow needs structured read-only data from a website, feed, community, or business system, that workflow can check TAP first:
+The intended flow is two-phase and human-initiated:
 
-```bash
-tap schema
-tap schema <site> <command>
-tap <site> <command> [--key value]
-```
+1. **A human expresses intent using `tap-adapter-author`** — describing what data source to access. The skill guides the full loop: site reconnaissance, endpoint validation, schema confirmation, pipeline assembly, and installation of the adapter under `~/.tap/adapters/<site>/<command>.js`.
+2. **The adapter is then declared into a specific workflow** — from that point on, an agent operates within that workflow and calls `tap` as a structured data source. The agent uses `tap schema` to discover the contract and calls the command; it does not need to reason about whether TAP is the right tool.
 
-If a relevant adapter exists, the workflow should prefer TAP over manual browsing, one-off scraping code, or ad hoc HTTP scripts. If no adapter matches, the workflow should continue with its normal data acquisition path, or use `tap-adapter-author` only when the user wants to turn the source into a reusable TAP adapter.
+This means TAP's agent-friendly design (schema introspection, structured errors, exit codes, JSON output) serves agents that already know they are inside a TAP-enabled workflow — not agents discovering TAP autonomously. The `tap-adapter-author` skill is the human-side entry point; TAP itself is the agent-side execution interface. The two have separate roles and do not overlap.
 
 ## How It Works
 
@@ -101,6 +98,8 @@ tap skill install codex
 
 Use `tap skill install claude-code` instead if you use Claude Code.
 
+The npm distribution uses a small wrapper package plus platform-specific optional binary packages. Installing `@leolee812/tap` downloads only the binary package compatible with the current OS/CPU, instead of bundling every supported platform into the main package.
+
 ---
 
 ## Usage
@@ -108,6 +107,11 @@ Use `tap skill install claude-code` instead if you use Claude Code.
 ```bash
 # List available sites and commands
 tap help
+
+# Print the installed version
+tap version
+tap --version
+tap -v
 
 # Initialize or refresh local TAP files
 tap setup
@@ -723,24 +727,18 @@ tap skill install codex --target ~/.codex/skills
 tap skill install claude-code --force
 ```
 
-The skill depends on the **chrome-devtools MCP** for automated reconnaissance (network monitoring and DOM inspection). Two manual steps are required before using it:
+For browser-based adapters (patterns that need login state), launch Chrome with remote debugging and log in to any target sites before running the skill:
 
-1. **Configure chrome-devtools MCP** in your Claude Code settings.
+```bash
+# macOS
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --remote-debugging-port=9222 \
+  --user-data-dir=~/.chrome-automation-profile \
+  --no-first-run \
+  --no-default-browser-check
+```
 
-2. **Launch Chrome with remote debugging and log in** to any sites you plan to scrape:
-
-   ```bash
-   # macOS
-   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-     --remote-debugging-port=9222 \
-     --user-data-dir=~/.chrome-automation-profile \
-     --no-first-run \
-     --no-default-browser-check
-   ```
-
-   The skill reuses the logged-in agent Chrome profile — it does not handle authentication itself. This is intentionally separate from your daily Chrome profile.
-
-> **Planned**: automate both steps so no manual setup is needed.
+The skill reuses the logged-in agent Chrome profile — it does not handle authentication itself. This is intentionally separate from your daily Chrome profile.
 
 ### Workflow
 
@@ -798,13 +796,25 @@ tap/
 │   ├── executor.js         # Pipeline execution engine
 │   ├── cdp.js              # Chrome DevTools Protocol session
 │   ├── adapters.js         # Adapter discovery and loading
-│   ├── help.js             # Help text generation
+│   ├── adapter-manager.js  # Adapter pack install/list/remove
 │   ├── schema.js           # Machine-readable command schema generation
-│   ├── bundled-skills.js   # Embedded skill assets for compiled binaries
-│   └── output.js           # JSON formatter
+│   ├── output.js           # JSON formatter
+│   ├── help.js             # Help text generation
+│   ├── browser.js          # Agent Chrome lifecycle management
+│   ├── doctor.js           # Local setup diagnostics
+│   ├── setup.js            # TAP initialization
+│   ├── skills.js           # AI skill installation
+│   ├── config.js           # Config file reading
+│   └── bundled-skills.js   # Embedded skill assets for compiled binaries
 ├── skills/                 # Source copy of bundled assistant skills
 │   └── tap-adapter-author/
 └── npm/
+    ├── run.js              # npm bin wrapper; selects the platform package
+    ├── install.js          # local development executable-bit helper
+    ├── platforms/          # generated optional binary packages
+    │   ├── tap-darwin-arm64/
+    │   ├── tap-darwin-x64/
+    │   └── tap-linux-x64/
     └── skills/             # npm package copy of bundled assistant skills
         └── tap-adapter-author/
 ```

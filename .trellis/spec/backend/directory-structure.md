@@ -166,6 +166,153 @@ Initialization of user-owned files belongs behind the explicit `tap setup` comma
 
 ---
 
+## Npm Distribution Split Packages
+
+### 1. Scope / Trigger
+
+Use this contract when changing npm package layout, platform binary build outputs, publish scripts, or the npm wrapper runtime.
+
+This is an infra/cross-layer contract because these files must agree:
+
+- `scripts/build-npm.js`
+- `scripts/publish-npm.js`
+- `.github/workflows/publish-npm.yml`
+- `npm/package.json`
+- `npm/run.js`
+- `npm/install.js`
+- generated `npm/platforms/<package>/package.json`
+
+### 2. Signatures
+
+```bash
+bun run build:npm
+bun run publish:npm
+node npm/run.js <tap args>
+```
+
+Generated package directories:
+
+```text
+npm/platforms/tap-darwin-arm64/
+npm/platforms/tap-darwin-x64/
+npm/platforms/tap-linux-x64/
+```
+
+Platform package names:
+
+```text
+@leolee812/tap-darwin-arm64
+@leolee812/tap-darwin-x64
+@leolee812/tap-linux-x64
+```
+
+### 3. Contracts
+
+- Main package name: `@leolee812/tap`
+- Main npm package files:
+  - `run.js`
+  - `install.js`
+  - `skills/`
+- Main npm package must not include:
+  - `binaries/`
+  - `platforms/`
+  - compiled platform binaries
+- Main package `optionalDependencies` must pin each platform package to the same version as root `package.json`.
+- Each platform package contains exactly:
+  - `package.json`
+  - `bin/tap`
+- Each platform package declares `os` and `cpu` constraints matching its binary.
+- `npm/run.js` maps `process.platform` + `process.arch` to a platform package name.
+- `npm/run.js` resolves the published platform package through `require.resolve("<pkg>/bin/tap")`.
+- `npm/run.js` must also support local development fallback at `npm/platforms/<package-dir>/bin/tap` after `bun run build:npm`.
+- `npm/run.js` must launch the binary with `TAP_PACKAGE_ROOT=__dirname` so `tap skill install ...` reads bundled skills from the main package.
+- `npm/install.js` may set executable bits for local generated binaries under `npm/platforms/`, but must not create or modify `~/.tap`, assistant directories, or user adapter directories.
+- `scripts/publish-npm.js` must publish platform packages before publishing the main package.
+- `scripts/publish-npm.js` must skip exact package versions that are already published so a partial publish can resume safely.
+- `.github/workflows/publish-npm.yml` is the preferred publish path. It must read npm credentials from `secrets.NPM_TOKEN`, run package dry-runs, and call `bun run scripts/publish-npm.js`.
+- `NPM_PUBLISH_DRY_RUN=1` must use `npm pack --dry-run` for each package, not `npm publish --dry-run`, because large publish dry-runs can still wait on registry submission behavior.
+
+### 4. Validation & Error Matrix
+
+| Case | Expected behavior |
+|------|-------------------|
+| `bun run build:npm` | Creates `npm/platforms/<package>/bin/tap` for each supported platform and updates npm package versions |
+| `node npm/run.js --version` after build | Uses local fallback binary and prints `tap <version>` |
+| Published install on supported platform | npm installs only the compatible optional platform package; `tap` runs through the main wrapper |
+| Published install missing platform package | `npm/run.js` exits non-zero and asks user to reinstall `@leolee812/tap` |
+| Unsupported OS/CPU | `npm/run.js` exits non-zero with `tap: unsupported platform <platform>-<arch>` |
+| Main package dry-run | Tarball is small and contains no platform binaries |
+| Platform package dry-run | Tarball contains one `bin/tap` and package metadata only |
+| GitHub Actions dry run | Builds packages, verifies wrapper, runs dry-run publish without requiring local npm auth |
+| Partial publish rerun | Already published exact package versions are skipped; remaining packages continue |
+
+### 5. Good/Base/Bad Cases
+
+- Good: `npm --cache /tmp/tap-npm-cache pack --dry-run` in `npm/` shows kilobyte-scale main package contents.
+- Base: `npm --cache /tmp/tap-npm-cache pack --dry-run` in `npm/platforms/tap-darwin-arm64/` shows exactly `bin/tap` and `package.json`.
+- Bad: main package `files` includes `binaries/` or `platforms/`, causing every user to download all platform binaries.
+- Bad: root `package.json`, `npm/package.json`, and platform package versions drift.
+
+### 6. Tests Required
+
+Manual checks are required until this repo has a test suite:
+
+```bash
+bun run build:npm
+node npm/run.js --version
+HOME=/tmp/tap-verify-npm node npm/run.js setup --force
+npm --cache /tmp/tap-npm-cache pack --dry-run
+cd npm/platforms/tap-darwin-arm64 && npm --cache /tmp/tap-npm-cache pack --dry-run
+cd ../tap-darwin-x64 && npm --cache /tmp/tap-npm-cache pack --dry-run
+cd ../tap-linux-x64 && npm --cache /tmp/tap-npm-cache pack --dry-run
+```
+
+Assertion points:
+
+- Main package tarball contains `run.js`, `install.js`, `package.json`, and `skills/` only.
+- Main package tarball does not contain `bin/tap`, `binaries/`, or `platforms/`.
+- Each platform package tarball contains one compiled `bin/tap`.
+- `node npm/run.js setup --force` writes only under the overridden `HOME`.
+
+### 7. Wrong vs Correct
+
+Wrong:
+
+```json
+{
+  "files": ["run.js", "install.js", "binaries/", "skills/"]
+}
+```
+
+Correct:
+
+```json
+{
+  "files": ["run.js", "install.js", "skills/"],
+  "optionalDependencies": {
+    "@leolee812/tap-darwin-arm64": "0.1.1",
+    "@leolee812/tap-darwin-x64": "0.1.1",
+    "@leolee812/tap-linux-x64": "0.1.1"
+  }
+}
+```
+
+Wrong:
+
+```js
+spawnSync(path.join(__dirname, 'binaries', name), args);
+```
+
+Correct:
+
+```js
+spawnSync(require.resolve(`${packageName}/bin/tap`), args, {
+  env: { ...process.env, TAP_PACKAGE_ROOT: __dirname },
+});
+```
+
+---
+
 ## Naming Conventions
 
 - Files: `kebab-case.js`

@@ -29,11 +29,14 @@ export function globalHelp() {
   const adapters = listAdapters();
   const lines = [
     'Usage: tap <site> <command> [--key value]',
+    '       tap version',
+    '       tap --version',
     '       tap help [site] [command]',
     '',
     'Output is JSON by default. --format json is accepted but optional.',
     '',
     sectionTitle('Commands'),
+    '  version, -v       Print the TAP version',
     '  help              Show global, site, or command help',
     '  schema            Show command schemas',
     '  setup             Initialize local TAP files explicitly',

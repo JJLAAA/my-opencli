@@ -3,6 +3,10 @@ import { AdapterLoadError, listAdapters, loadAdapter } from './adapters.js';
 const SCHEMA_VERSION = 1;
 
 const MANAGEMENT_COMMANDS = {
+  version: {
+    description: 'Print the TAP version.',
+    args: [],
+  },
   doctor: {
     description: 'Diagnose local TAP setup.',
     args: [],

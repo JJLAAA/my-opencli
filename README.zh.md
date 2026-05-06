@@ -14,17 +14,14 @@ TAP 的价值在于把业务系统中已经存在、但不适合 Agent 直接消
 
 ## 设计决策：数据访问层，而不是触发型 Skill
 
-TAP 的定位是嵌入到其他 Agent 工作流中的结构化数据访问层。它不需要一个专门的启发式 “use TAP” skill 去判断所有可能的数据获取意图。
+TAP 的定位是嵌入到其他 Agent 工作流中的结构化数据访问层。它不包含启发式的”使用 TAP”skill，因为 TAP 的设计初衷不是让 Agent 自主发现并使用它。
 
-业务或领域 skill 应该负责意图识别。当某个工作流需要从网站、feed、社区或业务系统读取结构化只读数据时，该工作流可以先检查 TAP：
+使用流程是两阶段、由人类发起的：
 
-```bash
-tap schema
-tap schema <site> <command>
-tap <site> <command> [--key value]
-```
+1. **人类使用 `tap-adapter-author` 表达意图** — 描述要接入的数据源。Skill 引导完成全流程：站点侦察、端点验证、schema 确认、pipeline 组装，并将适配器安装到 `~/.tap/adapters/<site>/<command>.js`。
+2. **适配器被声明进特定的工作流** — 此后，Agent 在该工作流的上下文中运行，将 `tap` 作为结构化数据源调用。Agent 通过 `tap schema` 发现命令契约并执行调用，不需要自行判断是否应该使用 TAP。
 
-如果存在匹配的 adapter，工作流应优先使用 TAP，而不是手动浏览、编写一次性爬虫或临时 HTTP 脚本。如果没有匹配的 adapter，工作流继续使用自己的常规数据获取路径；只有当用户希望把该数据源沉淀成可复用能力时，才使用 `tap-adapter-author`。
+这意味着 TAP 的 Agent 友好设计（schema 自省、结构化错误、退出码、JSON 输出）服务的是**已知自己处于 TAP 工作流中的 Agent**，而不是自主探索工具的 Agent。`tap-adapter-author` 是人类侧的入口；TAP 本身是 Agent 侧的执行接口。二者职责分离，互不重叠。
 
 > TAP 是 [opencli](https://github.com/jackwener/opencli) 的轻量版本。核心区别是浏览器隔离：TAP 将 Chrome 视为专供 Agent 使用的操作平台，而不是通过 daemon + extension 控制用户日常使用的 Chrome。
 
@@ -105,6 +102,8 @@ tap skill install codex
 
 如果使用 Claude Code，则改用 `tap skill install claude-code`。
 
+npm 分发使用一个很小的主 wrapper 包，加上按平台拆分的 optional binary packages。安装 `@leolee812/tap` 时，npm 只会下载当前 OS/CPU 兼容的二进制包，而不是把所有支持平台的二进制都打进主包。
+
 ---
 
 ## 使用
@@ -112,6 +111,11 @@ tap skill install codex
 ```bash
 # 查看所有站点和命令
 tap help
+
+# 输出已安装版本
+tap version
+tap --version
+tap -v
 
 # 初始化或刷新本地 TAP 文件
 tap setup
@@ -729,6 +733,19 @@ tap skill install codex --target ~/.codex/skills
 tap skill install claude-code --force
 ```
 
+需要登录态的浏览器适配器（Pattern B/D/E），在使用 skill 前需要先启动 Chrome 并登录目标站点：
+
+```bash
+# macOS
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --remote-debugging-port=9222 \
+  --user-data-dir=~/.chrome-automation-profile \
+  --no-first-run \
+  --no-default-browser-check
+```
+
+skill 复用已登录的 Agent Chrome profile，不会自动处理认证。这个 profile 与日常 Chrome 是刻意分离的。
+
 ### 工作流
 
 调用 skill，描述你想抓取的内容：
@@ -785,13 +802,25 @@ tap/
 │   ├── executor.js         # Pipeline 执行引擎
 │   ├── cdp.js              # Chrome DevTools Protocol 会话
 │   ├── adapters.js         # 适配器发现与加载
-│   ├── help.js             # Help 文本生成
+│   ├── adapter-manager.js  # 适配器包安装/列表/移除
 │   ├── schema.js           # 机器可读命令 schema 生成
-│   ├── bundled-skills.js   # 编译二进制内嵌的 skill 资源
-│   └── output.js           # JSON 格式化输出
+│   ├── output.js           # JSON 格式化输出
+│   ├── help.js             # Help 文本生成
+│   ├── browser.js          # Agent Chrome 生命周期管理
+│   ├── doctor.js           # 本地环境诊断
+│   ├── setup.js            # TAP 初始化
+│   ├── skills.js           # AI skill 安装
+│   ├── config.js           # 配置文件读取
+│   └── bundled-skills.js   # 编译二进制内嵌的 skill 资源
 ├── skills/                 # 内置 assistant skills 的源码副本
 │   └── tap-adapter-author/
 └── npm/
+    ├── run.js              # npm bin wrapper，选择平台包
+    ├── install.js          # 本地开发时设置可执行权限
+    ├── platforms/          # 生成的 optional 二进制平台包
+    │   ├── tap-darwin-arm64/
+    │   ├── tap-darwin-x64/
+    │   └── tap-linux-x64/
     └── skills/             # npm 包中的内置 assistant skills 副本
         └── tap-adapter-author/
 ```

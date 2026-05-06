@@ -1,22 +1,39 @@
 {
-  "name": "@company/tap",
-  "version": "0.1.0",
-  "description": "CLI tool for executing declarative data pipelines",
+  "name": "@leolee812/tap",
+  "version": "0.1.1",
+  "description": "Lightweight CLI for executing declarative data pipelines that fetch and transform data from web sources",
+  "keywords": [
+    "tap",
+    "cli",
+    "pipeline",
+    "adapter",
+    "agent",
+    "cdp",
+    "scraping"
+  ],
+  "author": "leo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JJLAAA/tap.git"
+  },
+  "homepage": "https://github.com/JJLAAA/tap",
   "bin": {
     "tap": "run.js"
   },
   "scripts": {
     "postinstall": "node install.js"
   },
+  "optionalDependencies": {
+    "@leolee812/tap-darwin-arm64": "0.1.1",
+    "@leolee812/tap-darwin-x64": "0.1.1",
+    "@leolee812/tap-linux-x64": "0.1.1"
+  },
   "files": [
     "run.js",
     "install.js",
-    "binaries/",
     "skills/"
   ],
-  "publishConfig": {
-    "registry": "https://npm.company.com"
-  },
   "engines": {
     "node": ">=18"
   }

@@ -1,0 +1,6 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify no new dependencies and no install writes to user TAP state."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Verify npm wrapper preserves package asset root and setup constraints."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Verify platform target definitions do not drift across scripts and runtime."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Verify optional dependency package contract across package metadata, build outputs, and runtime resolution."}

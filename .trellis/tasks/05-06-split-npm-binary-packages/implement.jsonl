@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Packaging changes must keep ESM source style, avoid dependencies, and keep install side effects scoped."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Npm wrapper and build script must preserve package asset root and explicit setup contracts."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Main package optional dependencies, platform packages, build outputs, and run.js path resolution form a cross-layer contract."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Build targets and platform package metadata should be defined once to avoid drift."}
