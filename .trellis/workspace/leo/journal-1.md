@@ -782,3 +782,54 @@ Completed split npm binary package publishing flow: platform optional packages, 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: Agent-Friendly CLI: --fields mask & help examples
+
+**Date**: 2026-05-06
+**Task**: Agent-Friendly CLI: --fields mask & help examples
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| 改进点 | 说明 |
+|--------|------|
+| `--fields` 字段掩码 | 全局参数，逗号分隔字段名，仅输出指定字段；未知字段进 `meta.warnings`；adapter 契约诊断始终对完整 schema 运行，不受掩码影响 |
+| `adapter.examples` | 顶层可选字段，在 `tap help <site> <command>` 渲染 Examples 段 |
+| Global Options 段 | 每个 command help 末尾固定展示 `--format` 和 `--fields` |
+| tap-adapter-author skill | Step 5 和关键约定补充 `examples` 字段说明 |
+| CLAUDE.md | Documentation Sync 规则新增：adapter 配置语义变更须同步 skill；Adapter Shape 示例加入 `examples` |
+| README / README.zh.md | Output Format 表格和 Adapter Shape 表格同步更新 |
+
+**Codex Review Fix**: 原实现将 `effectiveFields` 传入 `projectRows` 导致被掩码字段的缺失告警被隐藏；修复为先用完整 `fields` 做契约检查，再用 `maskItems()` 二次投影。
+
+**Updated Files**:
+- `src/cli.js` — peekFields/stripFields, validateAdapterArgs 加 fields, printOutput 透传
+- `src/help.js` — commandHelp 加 Examples 段和 Global Options 段
+- `src/output.js` — applyFieldMask + maskItems，projectRows 恢复完整契约检查
+- `CLAUDE.md` — Documentation Sync 规则 + Adapter Shape 示例
+- `README.md` / `README.zh.md` — --fields 和 examples 文档
+- `skills/tap-adapter-author/SKILL.md` — Step 5 + 关键约定补充 examples
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8714045` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
