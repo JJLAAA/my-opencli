@@ -157,8 +157,11 @@ tap <site> <command> --limit 10
 | Flag | Description |
 |------|-------------|
 | _(default)_ / `--format json` | JSON envelope with `meta`, `schema`, and `items` for data commands |
+| `--fields <f1,f2,...>` | Return only the named fields from the adapter's declared schema |
 
 JSON is the only supported output format for data commands, and management commands also print JSON. `--format json` is accepted for explicitness, but it is optional for those commands. Help commands intentionally print human-readable text.
+
+`--fields` accepts a comma-separated list of field names declared in the adapter's `output.fields`. Unknown field names produce a warning in `meta.warnings` but do not fail. The `schema.items.properties` in the response reflects the effective set of returned fields. Adapter contract diagnostics (missing/dropped field warnings) are always evaluated against the full declared schema, regardless of `--fields`.
 
 ### Agent Contract Discovery
 
@@ -325,6 +328,7 @@ export default {
 |-------|----------|-------------|
 | `description` | No | Shown in `tap help <site> <command>` |
 | `args` | No | CLI params with defaults, descriptions, and validation metadata |
+| `examples` | No | Usage examples shown in `tap help <site> <command>`. Array of `{ description?, args }` objects |
 | `output.fields` | Yes for JSON output | Machine-readable field contract used to build the JSON schema |
 | `pipeline` | Yes to run a data command | Ordered array of steps executed by the pipeline engine |
 

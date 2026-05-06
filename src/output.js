@@ -80,11 +80,44 @@ function projectRows(rows, fields) {
   return { items, warnings };
 }
 
+function maskItems(items, effectiveFields) {
+  const fieldNames = Object.keys(effectiveFields);
+  return items.map(item => Object.fromEntries(fieldNames.map(k => [k, item[k] ?? null])));
+}
+
+function applyFieldMask(fields, mask) {
+  const requested = mask.split(',').map(s => s.trim()).filter(Boolean);
+  const masked = {};
+  const unknown = [];
+  for (const name of requested) {
+    if (Object.prototype.hasOwnProperty.call(fields, name)) {
+      masked[name] = fields[name];
+    } else {
+      unknown.push(name);
+    }
+  }
+  return { masked, unknown, requested };
+}
+
 function formatJsonEnvelope(data, options) {
   const adapter = options.adapter ?? {};
   const fields = validateOutputFields(adapter, options);
   const rows = normalizeRows(data);
-  const { items, warnings } = projectRows(rows, fields);
+
+  let effectiveFields = fields;
+  const maskWarnings = [];
+  if (typeof options.fields === 'string' && options.fields.length) {
+    const { masked, unknown, requested } = applyFieldMask(fields, options.fields);
+    if (unknown.length) maskWarnings.push(`Unknown field(s) in --fields: ${unknown.join(', ')}`);
+    if (Object.keys(masked).length) {
+      effectiveFields = masked;
+    } else if (requested.length) {
+      maskWarnings.push('No valid fields matched --fields; falling back to full schema.');
+    }
+  }
+
+  const { items: allItems, warnings } = projectRows(rows, fields);
+  const items = effectiveFields === fields ? allItems : maskItems(allItems, effectiveFields);
 
   const meta = {
     site: options.site,
@@ -93,11 +126,12 @@ function formatJsonEnvelope(data, options) {
     generatedAt: new Date().toISOString(),
     args: options.args ?? {},
   };
-  if (warnings.length) meta.warnings = warnings;
+  const allWarnings = [...maskWarnings, ...warnings];
+  if (allWarnings.length) meta.warnings = allWarnings;
 
   return {
     meta,
-    schema: buildSchema(adapter.output, fields),
+    schema: buildSchema(adapter.output, effectiveFields),
     items,
   };
 }

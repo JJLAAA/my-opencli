@@ -161,8 +161,11 @@ tap <site> <command> --limit 10
 | 参数 | 说明 |
 |------|------|
 | _（默认）_ / `--format json` | 数据命令输出包含 `meta`、`schema`、`items` 的 JSON envelope |
+| `--fields <f1,f2,...>` | 仅返回 adapter 声明 schema 中指定的字段 |
 
 JSON 是数据命令唯一支持的输出格式，管理命令也会输出 JSON。`--format json` 仍可显式传入，但对这些命令都是可选的。Help 命令会有意输出面向人阅读的文本。
+
+`--fields` 接受逗号分隔的字段名列表，字段须在 adapter 的 `output.fields` 中声明。未知字段名会产生 `meta.warnings` 警告但不会报错。响应中的 `schema.items.properties` 只包含实际返回的字段。Adapter 契约诊断（字段缺失/丢弃警告）始终按完整声明 schema 评估，不受 `--fields` 影响。
 
 ### Agent 契约发现
 
@@ -329,6 +332,7 @@ export default {
 |------|------|------|
 | `description` | 否 | 在 `tap help <site> <command>` 中显示 |
 | `args` | 否 | CLI 参数，支持默认值、说明和校验元数据 |
+| `examples` | 否 | 在 `tap help <site> <command>` 中显示的用法示例。数组，每项为 `{ description?, args }` |
 | `output.fields` | JSON 输出必填 | 机器可读字段契约，用于生成 JSON schema |
 | `pipeline` | 执行数据命令时需要 | Pipeline 引擎按顺序执行的步骤数组 |
 

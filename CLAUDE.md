@@ -60,6 +60,10 @@ Use `TAP_ADAPTERS_DIR` for development or workflow-owned adapter directories; ot
 export default {
   description: 'Short description shown in help.',
   args: [{ name: 'limit', default: 20, description: 'Max items.' }],
+  examples: [                              // optional; shown in --help
+    { args: { limit: 5 } },
+    { description: 'titles only', args: { limit: 10, fields: 'title,url' } },
+  ],
   output: {
     type: 'list',
     itemName: 'item',
@@ -139,6 +143,8 @@ ESM JavaScript with explicit `import`/`export`, semicolons, 2-space indentation.
 
 ## Documentation Sync
 When changing CLI capabilities (commands, flags, output envelopes, schemas, exit codes, structured errors, browser behavior, adapter contracts, setup flows, environment variables), update both `README.md` and `README.zh.md` in the same change.
+
+When adding or changing adapter configuration semantics (new top-level adapter fields, new pipeline step options, new arg metadata, new output contract rules), also update `skills/tap-adapter-author/SKILL.md` in the same change so adapter authors learn the new capability.
 
 ## npm 发布 Checklist
 

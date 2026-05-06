@@ -62,6 +62,25 @@ function stripFormat(tokens) {
   });
 }
 
+function peekFields(tokens) {
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i] === '--fields') {
+      const val = tokens[i + 1];
+      if (!val || val.startsWith('--')) return '';
+      return val;
+    }
+  }
+  return null;
+}
+
+function stripFields(tokens) {
+  return tokens.filter((t, i) => {
+    if (t === '--fields') return false;
+    if (i > 0 && tokens[i - 1] === '--fields' && !t.startsWith('--')) return false;
+    return true;
+  });
+}
+
 function parseArgs(rest) {
   const args = {};
   for (let i = 0; i < rest.length; i++) {
@@ -395,6 +414,7 @@ function validateAdapterArgs(adapter, args, site, command) {
   const definedArgs = adapter.args ?? [];
   const knownNames = new Set(definedArgs.map(def => def.name));
   knownNames.add('format');
+  knownNames.add('fields');
 
   for (const key of Object.keys(args)) {
     if (!knownNames.has(key)) {
@@ -477,7 +497,11 @@ export async function runCli(argv = process.argv.slice(2)) {
       details: { format: rawFormat, supported: ['json'] },
     });
   }
-  const tokens = stripFormat(argv);
+  const rawFields = peekFields(argv);
+  if (rawFields === '') {
+    fail('Missing value for --fields', { code: 'missing_fields_value', exitCode: EXIT_USAGE });
+  }
+  const tokens = stripFields(stripFormat(argv));
 
   if (tokens.length === 1 && isVersionToken(tokens[0])) printVersion();
   if (tokens[0] === 'skill') runSkillCommand(tokens.slice(1));
@@ -564,6 +588,7 @@ export async function runCli(argv = process.argv.slice(2)) {
       command,
       args,
       adapter,
+      fields: rawFields ?? undefined,
     });
   } catch (error) {
     const isBrowserError = /cdp|chrome|browser|devtools|websocket/i.test(error.message);

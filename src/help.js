@@ -82,6 +82,18 @@ export function commandHelp(site, command, adapter) {
 
   lines.push('', 'Output is a JSON envelope with meta, schema, and items. --format json is accepted but optional.');
 
+  if (Array.isArray(adapter.examples) && adapter.examples.length) {
+    lines.push('', sectionTitle('Examples'));
+    for (const example of adapter.examples) {
+      const argParts = Object.entries(example?.args ?? {})
+        .map(([key, value]) => value === true ? `--${key}` : `--${key} ${value}`)
+        .join(' ');
+      const cmd = `tap ${site} ${command}${argParts ? ` ${argParts}` : ''}`;
+      const line = example?.description ? `  ${cmd.padEnd(48)}# ${example.description}` : `  ${cmd}`;
+      lines.push(line);
+    }
+  }
+
   if (args.length) {
     lines.push('', sectionTitle('Options'));
     for (const arg of args) lines.push(formatOptionLine(arg));
@@ -94,6 +106,13 @@ export function commandHelp(site, command, adapter) {
       lines.push(`  ${name}${details ? `: ${details}` : ''}`);
     }
   }
+
+  lines.push(
+    '',
+    sectionTitle('Global Options'),
+    '  --format <"json">       Output format (default: json)',
+    '  --fields <f1,f2,...>    Return only the named output fields',
+  );
 
   return lines.join('\n');
 }

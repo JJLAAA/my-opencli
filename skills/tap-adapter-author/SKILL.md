@@ -89,6 +89,9 @@ DONE
        [ ] 每个字段必须有 type 和 description，可选 format / unit / nullable / source / examples
        [ ] 命名用 camelCase，单位清晰（如 viewCount 不是 play）
        [ ] columns：如需 table 输出，按 schema 字段顺序排列
+       [ ] examples（可选）：写 1-3 个常用调用示例，会在 tap help <site> <command> 中展示
+              格式：[{ description?: '说明', args: { limit: 5 } }, ...]
+              建议写：默认调用、指定 limit、组合 --fields 的典型用法
        ✋ 向用户汇报：展示 description / args / output.fields / columns / pipeline 草稿，等待最终确认后再写文件
 
 [ ] 6. 组装 pipeline
@@ -144,6 +147,7 @@ DONE
 
 - 适配器只能用 pipeline 声明式步骤，不能写自定义逻辑函数
 - 顶层 `description` 必须写一句业务说明，用于 `tap schema` 全局命令发现；不能省略
+- 顶层 `examples`（可选）：写 1-3 个典型调用示例，在 `tap help` 中展示给用户和 Agent，格式为 `[{ description?, args }]`
 - `args` 中每个参数都应写 `description`，让 `tap schema <site> <command>` 能指导 Agent 正确调用
 - `output.fields` 是 JSON 输出契约，必须由用户确认后写入；不要从字段名或样例值静默猜最终 schema
 - JSON 输出只包含 `output.fields` 声明的字段；未声明字段会被 runtime 丢弃
