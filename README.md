@@ -66,6 +66,22 @@ This keeps human browsing and agent automation separate:
 
 ## Installation
 
+### npm (recommended)
+
+```bash
+npm install -g @leolee812/tap
+```
+
+This installs a small wrapper package that automatically pulls in the prebuilt binary for your OS and CPU. No Bun or build step required.
+
+Then initialize user-owned TAP files:
+
+```bash
+tap setup
+```
+
+### From source (for contributors)
+
 **Prerequisites:** [Bun](https://bun.sh) runtime.
 
 ```bash
@@ -73,23 +89,17 @@ git clone <repo>
 cd tap
 bun install
 bun run build        # produces ./tap binary
-```
-
-Move the binary somewhere on your `$PATH`:
-
-```bash
 mv tap /usr/local/bin/tap
-```
-
-Initialize user-owned TAP files explicitly:
-
-```bash
 tap setup
 ```
 
-`tap setup` creates `~/.tap/`, `~/.tap/adapters/`, `~/.tap/logs/`, and a default `~/.tap/config.json`. Existing config is kept unless you pass `--force`.
+---
 
-**Installation scope:** installing the TAP binary, including via npm package distributions, installs only the CLI runtime. Adapter packs and assistant skills are intentionally installed explicitly:
+**Installation scope:** installing the TAP binary installs only the CLI runtime: command parsing, pipeline execution, schema output, browser control, and local config. TAP does not bundle site-specific adapters or install assistant instructions automatically.
+
+Install an adapter pack only when you want ready-made commands for a specific data source. Adapter packs add files under `~/.tap/adapters/`, which is what turns a generic command like `tap <site> <command>` into a concrete data pipeline.
+
+Install the assistant skill only when you want your AI coding assistant to help author new adapters. The skill is not needed to run existing adapters; it teaches the assistant the TAP adapter workflow and writes the resulting adapter into your local adapter directory.
 
 ```bash
 tap adapter install github:<owner>/<repo>
@@ -98,7 +108,7 @@ tap skill install codex
 
 Use `tap skill install claude-code` instead if you use Claude Code.
 
-The npm distribution uses a small wrapper package plus platform-specific optional binary packages. Installing `@leolee812/tap` downloads only the binary package compatible with the current OS/CPU, instead of bundling every supported platform into the main package.
+`tap setup` creates `~/.tap/`, `~/.tap/adapters/`, `~/.tap/logs/`, and a default `~/.tap/config.json`. Existing config is kept unless you pass `--force`.
 
 ---
 
@@ -717,7 +727,7 @@ TAP ships with an AI assistant skill (`tap-adapter-author`) that guides you thro
 
 ### Setup
 
-Install the skill explicitly for the assistant you use:
+Install the skill explicitly for the assistant you use. This copies TAP's adapter-authoring instructions into that assistant's skill directory, so the assistant can guide reconnaissance, schema design, implementation, and verification in the same workflow:
 
 ```bash
 tap skill install claude-code
