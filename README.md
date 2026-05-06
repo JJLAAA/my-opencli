@@ -29,6 +29,20 @@ The intended flow is two-phase and human-initiated:
 
 This means TAP's agent-friendly design (schema introspection, structured errors, exit codes, JSON output) serves agents that already know they are inside a TAP-enabled workflow — not agents discovering TAP autonomously. The `tap-adapter-author` skill is the human-side entry point; TAP itself is the agent-side execution interface. The two have separate roles and do not overlap.
 
+## When Not to Use TAP
+
+TAP is not a general-purpose web scraper or research tool. The right question to ask is: **is this a known data source you will access repeatedly, or a one-off information retrieval task?**
+
+| Scenario | Use TAP? | Better alternative |
+|----------|----------|--------------------|
+| Pull structured data from an internal dashboard every day | Yes | — |
+| Query a business system that has no API | Yes | — |
+| Deep research across arbitrary web sources | No | LLM native web browse |
+| Summarize or analyze an article | No | LLM native web browse |
+| One-off data lookup with no fixed schema | No | LLM native web browse |
+
+The cost of TAP is upfront: a human authors an adapter, encodes the data contract, and installs it. That investment only pays off when the same access pattern repeats. If the data source is dynamic, the schema is unknown, or you only need to fetch something once, use your agent's native web capabilities instead.
+
 ## How It Works
 
 TAP separates **what to fetch** from **how to fetch it**:

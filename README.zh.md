@@ -23,6 +23,20 @@ TAP 的定位是嵌入到其他 Agent 工作流中的结构化数据访问层。
 
 这意味着 TAP 的 Agent 友好设计（schema 自省、结构化错误、退出码、JSON 输出）服务的是**已知自己处于 TAP 工作流中的 Agent**，而不是自主探索工具的 Agent。`tap-adapter-author` 是人类侧的入口；TAP 本身是 Agent 侧的执行接口。二者职责分离，互不重叠。
 
+## 什么时候不该用 TAP
+
+TAP 不是通用网络爬虫，也不是信息检索工具。判断标准只有一条：**这是一个需要反复访问的已知数据源，还是一次性的信息获取任务？**
+
+| 场景 | 用 TAP？ | 更合适的方式 |
+|------|---------|------------|
+| 每天从内部后台拉取结构化数据 | 是 | — |
+| 访问没有 API 的业务系统 | 是 | — |
+| 跨任意网络来源做 deep research | 否 | LLM 原生 web browse |
+| 解读或总结某篇文章 | 否 | LLM 原生 web browse |
+| 一次性数据查询，没有固定 schema | 否 | LLM 原生 web browse |
+
+TAP 的成本在前期：人类需要编写适配器、约定数据契约、完成安装。只有当同样的访问模式会反复出现时，这个投入才值得。如果数据源是动态的、schema 不固定、或者只需要获取一次，直接用 Agent 的原生网络能力更合适。
+
 > TAP 是 [opencli](https://github.com/jackwener/opencli) 的轻量版本。核心区别是浏览器隔离：TAP 将 Chrome 视为专供 Agent 使用的操作平台，而不是通过 daemon + extension 控制用户日常使用的 Chrome。
 
 ---
