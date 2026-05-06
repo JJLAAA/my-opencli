@@ -469,13 +469,15 @@
             <span class="arrow">→</span>
             <div class="step">pipeline</div>
           </div>
-          <p class="row">pipeline 用 <code>fetch</code>、<code>navigate</code>、<code>intercept</code>、<code>select</code>、<code>map</code>、<code>limit</code> 等步骤描述执行。</p>
+          <p class="row">HTTP 步骤：<code>fetch</code>、<code>browserFetch</code></p>
+          <p class="row">浏览器步骤：<code>navigate</code>、<code>evaluate</code>、<code>intercept</code></p>
+          <p class="row">数据步骤：<code>select</code>、<code>map</code>、<code>mapOne</code>、<code>foreach</code>、<code>filter</code>、<code>sort</code>、<code>limit</code></p>
         </div>
         <div class="card">
-          <h3><span class="mini-icon">L</span>加载优先级</h3>
-          <p class="row ok"><code>TAP_ADAPTERS_DIR</code> 自定义目录优先，用于项目私有命令。</p>
-          <p class="row ok"><code>~/.tap/adapters</code> 用户适配器覆盖内置适配器。</p>
-          <p class="row"><code>adapters/</code> 可放置可选内置适配器。</p>
+          <h3><span class="mini-icon">L</span>加载优先级 <span class="meta violet">仅两级</span></h3>
+          <p class="row ok">① <code>TAP_ADAPTERS_DIR</code> 环境变量指定目录（最高优先）。</p>
+          <p class="row ok">② <code>~/.tap/adapters/</code> 用户目录。</p>
+          <p class="row warn">无内置 <code>adapters/</code> 目录——不会降级查找项目根目录。</p>
         </div>
       </div>
     </section>
@@ -499,17 +501,19 @@
         <div class="card">
           <h3><span class="mini-icon">1</span>CLI 编排</h3>
           <p class="row ok"><code>bin/cli.js</code> 解析站点、命令、参数和输出格式。</p>
-          <p class="row">加载命中的 adapter，并把参数交给执行器。</p>
+          <p class="row">适配器命令：<code>tap &lt;site&gt; &lt;cmd&gt;</code></p>
+          <p class="row warn">管理命令：<code>doctor</code> · <code>browser start/stop/status</code> · <code>adapter install/list/remove</code> · <code>setup</code> · <code>skill install</code> · <code>schema</code> · <code>help</code></p>
         </div>
         <div class="card">
           <h3><span class="mini-icon">2</span>顺序执行步骤</h3>
           <p class="row ok"><code>executePipeline()</code> 让每一步接收上一轮 <code>data</code>。</p>
-          <p class="row">HTTP、选择、映射、过滤、排序、截断组合为稳定数据流。</p>
+          <p class="row">步骤可用 <code>as</code> 保存到 <code>state</code>，后续步骤通过 <code>from</code> 读取；<code>foreach</code> 支持并发。</p>
         </div>
         <div class="card">
           <h3><span class="mini-icon">3</span>结构化输出</h3>
-          <p class="row ok">默认 JSON 输出 <code>meta/schema/items</code> envelope。</p>
-          <p class="row warn">JSON 字段由 adapter 的 <code>output.fields</code> 固定，减少后处理不确定性。</p>
+          <p class="row ok">JSON 输出：<code>{ meta, schema, items }</code> envelope。</p>
+          <p class="row"><code>meta</code> 含 <code>resultType</code>（list/object）和 <code>warnings</code>（字段校验告警）。</p>
+          <p class="row warn">字段由 <code>output.fields</code> 固定，未声明字段自动剔除。</p>
         </div>
       </div>
     </section>
@@ -532,14 +536,15 @@
       <div class="split">
         <div class="subpanel" style="--sub:#2563eb;--sub-bg:#eff6ff;--sub-line:#93c5fd;">
           <h4>直接 HTTP 路径</h4>
-          <p class="row ok">公开接口或无需登录接口走 <code>fetch</code>。</p>
+          <p class="row ok">公开接口走 <code>fetch</code>（无需浏览器）。</p>
           <p class="row">适合新闻列表、热榜、公开配置和轻量信息获取。</p>
         </div>
         <div class="subpanel" style="--sub:#c76212;--sub-bg:#fff7ed;--sub-line:#fdba74;">
           <h4>CDP 浏览器路径</h4>
-          <p class="row ok"><code>TAP_CDP_ENDPOINT</code> 连接 Chrome remote debug。</p>
-          <p class="row ok">复用用户 Chrome 的 cookie、会话和登录态。</p>
-          <p class="row">通过 <code>navigate</code>、<code>evaluate</code>、<code>intercept</code> 抽取页面内数据。</p>
+          <p class="row ok"><code>TAP_CDP_ENDPOINT</code>（默认 <code>127.0.0.1:9222</code>）连接 Chrome remote debug。</p>
+          <p class="row ok">复用用户 Chrome 的 cookie、会话和登录态；配置存于 <code>~/.tap/config.json</code>。</p>
+          <p class="row"><code>navigate</code> 导航 · <code>evaluate</code> 执行 JS · <code>intercept</code> 拦截请求</p>
+          <p class="row"><code>browserFetch</code> 带 Cookie 请求 · <code>click</code> 点击元素 · <code>scroll</code> 页面滚动</p>
         </div>
       </div>
     </section>
@@ -578,7 +583,7 @@
       </div>
     </section>
 
-    <section class="summary-grid" aria-label="关键机制摘要">
+    <section class="summary-grid" aria-label="关键机制摘要" style="grid-template-columns: repeat(5, minmax(0, 1fr));">
       <div class="note" style="--note:#2563eb;">
         <span class="num">1</span>
         <h3>Agent 入口</h3>
@@ -597,13 +602,26 @@
         <span class="num">3</span>
         <h3>浏览器会话</h3>
         <p>需要登录态时，通过 CDP 进入已有 Chrome 上下文。</p>
-        <div class="codebox">TAP_CDP_ENDPOINT=http://127.0.0.1:9222</div>
+        <div class="codebox">TAP_CDP_ENDPOINT=
+  http://127.0.0.1:9222</div>
       </div>
       <div class="note" style="--note:#0f766e;">
         <span class="num">4</span>
         <h3>结果消费</h3>
-        <p>返回 schema-aware JSON 或表格，便于 Agent 后续摘要、对比和决策。</p>
-        <div class="codebox">printOutput(data, format, options)</div>
+        <p>返回 schema-aware JSON，含 <code>meta.resultType</code> 和 <code>meta.warnings</code>，便于 Agent 摘要与决策。</p>
+        <div class="codebox">{ meta, schema, items }</div>
+      </div>
+      <div class="note" style="--note:#dc2626;">
+        <span class="num">5</span>
+        <h3>Exit Codes</h3>
+        <p>失败类型可机器识别，支持重试策略。</p>
+        <div class="codebox">0 success
+1 general_error
+2 usage_error
+3 config_error
+4 browser_error
+5 upstream_error
+6 adapter_contract</div>
       </div>
     </section>
   </main>

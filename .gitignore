@@ -4,3 +4,5 @@ npm/binaries/
 npm/platforms/
 npm/adapters/
 npm/skills/
+.npmrc
+.DS_Store
