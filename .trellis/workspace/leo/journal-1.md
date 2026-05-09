@@ -833,3 +833,36 @@ Completed split npm binary package publishing flow: platform optional packages, 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 21: Create consolidate spec skill
+
+**Date**: 2026-05-09
+**Task**: Create consolidate spec skill
+**Branch**: `main`
+
+### Summary
+
+Created the consolidate-spec skill and consolidated Trellis spec documentation with checklist routing and focused core/adapter contracts.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `07e8da0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
