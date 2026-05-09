@@ -41,6 +41,7 @@ bun run bin/cli.js <site> <command> --limit 5 --format json
 - **`src/skills.js`** — `installSkill()` copies the bundled skill to AI assistant skill directories (Claude Code, Codex).
 - **`src/bundled-skills.js`** — Embeds the `tap-adapter-author` skill in the standalone binary.
 - **`src/config.js`** — `readConfig()`, `getConfigDir()`, `getCDPEndpoint()`. Reads `~/.tap/config.json`.
+- **`src/version.js`** — Exports `TAP_VERSION` and `versionText()` from `package.json`.
 
 ### Other Directories
 - **`skills/tap-adapter-author/`** — Bundled AI skill for adapter authoring.

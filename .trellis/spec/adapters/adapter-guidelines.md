@@ -6,7 +6,7 @@
 
 ## Overview
 
-Each adapter is a `.js` file with a single default export containing three fields: `args`, `columns`, `pipeline`.
+Each adapter is a `.js` file with a single default export. The current command contract is `description?`, `args`, `output.fields`, optional `columns`, and `pipeline`.
 
 ---
 
@@ -14,7 +14,20 @@ Each adapter is a `.js` file with a single default export containing three field
 
 ```js
 export default {
-  args: [{ name: 'limit', default: 20 }],
+  description: 'List hot videos.',
+  args: [
+    { name: 'limit', type: 'integer', default: 20, minimum: 1, maximum: 100, description: 'Max items to return.' },
+  ],
+  output: {
+    type: 'list',
+    itemName: 'video',
+    fields: {
+      rank: { type: 'integer', description: 'One-based rank in the result set.' },
+      title: { type: 'string', description: 'Video title.' },
+      author: { type: 'string', description: 'Video author.' },
+      play: { type: 'integer', description: 'Play count.' },
+    },
+  },
   columns: ['rank', 'title', 'author', 'play'],
   pipeline: [
     { navigate: 'https://www.bilibili.com' },
@@ -36,20 +49,47 @@ export default {
 
 ## Field Conventions
 
+### `description`
+Optional short command description shown in help and schema output.
+
 ### `args`
-Array of argument definitions. Each entry: `{ name, default }`.  
-`default` is required. String args stay strings; numeric args use number defaults.
+Array of argument definitions. Declare enough metadata for an agent to call the command without guessing.
+
+Common fields:
 
 ```js
 args: [
-  { name: 'limit', default: 20 },
-  { name: 'page', default: 1 },
+  { name: 'limit', type: 'integer', default: 20, minimum: 1, maximum: 100, description: 'Max items to return.' },
+  { name: 'sort', enum: ['hot', 'new'], default: 'hot', description: 'Sort order.' },
+  { name: 'keyword', required: true, description: 'Search term.' },
 ]
 ```
 
+Unknown flags, invalid types, enum mismatches, out-of-range numbers, and missing required args produce structured JSON usage errors before the adapter runs.
+
+### JSON Output Contract
+Required for JSON output. The runtime does not infer field meaning from row keys.
+
+```js
+output: {
+  type: 'list',
+  itemName: 'item',
+  fields: {
+    rank: { type: 'integer', description: 'One-based rank in the returned result set.' },
+    title: { type: 'string', description: 'Item title.' },
+  },
+}
+```
+
+Each field entry must be an object with:
+
+- `type`: non-empty string used in the JSON schema
+- `description`: non-empty human/agent-facing description
+
+JSON envelopes contain `meta`, `schema`, and `items`. `items` only includes declared `output.fields`; extra fields produced by the pipeline are dropped with a warning, and missing declared fields are returned as `null` with a warning.
+
 ### `columns`
-Array of column names for table output. Order determines display order.  
-Must match keys produced by the final `map` step.
+Optional array of column names for display-oriented contexts. When present, order determines display order. Names must align with the keys produced by the final `map` step and with declared `output.fields`.
 
 ```js
 columns: ['rank', 'title', 'author', 'play']
@@ -63,20 +103,23 @@ Supported ops:
 | Op | Params | Description |
 |----|--------|-------------|
 | `navigate` | URL string | Open URL in Chrome tab (establishes cookie context) |
-| `evaluate` | JS expression string | Run JS in browser page, returns value |
+| `evaluate` | JS expression string or `{ code, as? }` | Run JS in browser page, returns value |
 | `fetch` | URL string or `{ url }` | HTTP GET, returns parsed JSON |
-| `browserFetch` | `{ url, as? }` | Run browser-context `fetch()` with cookies |
+| `browserFetch` | `{ url, as?, method?, headers?, body?, credentials? }` | Run browser-context `fetch()` with cookies |
+| `intercept` | `{ capture, trigger?, timeout?, select?, as? }` | Capture matching XHR/fetch responses after a trigger |
+| `select` | path string or `{ from?, path?, as? }` | Extract a nested value from current data or named state |
 | `foreach` | `{ from, as, concurrency?, steps }` | Run nested steps for each item in an array |
 | `mapOne` | object of `{ field: template }` | Transform the current value into one object |
 | `map` | object of `{ field: template }` | Transform each item |
 | `filter` | JS expression string | Keep items where expression is truthy |
+| `sort` | field string or `{ by, order? }` | Sort an array; `order: 'desc'` reverses |
 | `limit` | number or template | Slice data to N items |
 
 ---
 
 ## Template Syntax
 
-Use `${{ expr }}` in string values within `map` and `navigate`/`fetch` params.
+Use `${{ expr }}` in string values within `map`, `mapOne`, and URL params.
 
 Available variables:
 - `item` — current array item (in `map`, `filter`)
@@ -155,5 +198,7 @@ For plain API requests that only need browser cookies, prefer `browserFetch` ove
 
 - **Forgetting `credentials: 'include'`** in `evaluate` fetch calls — cookies won't be sent
 - **Using `export const` instead of `export default`** — CLI expects `default`
-- **Column names not matching `map` keys** — rows will show empty cells
+- **Missing `output.fields`** — JSON output fails adapter contract validation
+- **Field names not matching `map` keys** — JSON output returns `null` for missing declared fields or drops undeclared fields
+- **`columns` not aligned with `output.fields`** — display order drifts from the machine-readable schema
 - **Using hyphens in site/command names** — path convention is no hyphens

@@ -14,7 +14,6 @@ TAP is a small, focused CLI tool. The quality bar is: readable, minimal, correct
 
 - **Pure ESM** — all files use `import`/`export`, no `require()`
 - **Single responsibility per file** — each `src/` module does one thing
-- **Default export for adapters** — adapters use `export default { args, output, columns, pipeline }`; JSON-capable adapters must declare `output.fields`
 - **Named exports for core modules** — `src/*.js` use named exports
 - **Shebang on entry point** — `bin/cli.js` must start with `#!/usr/bin/env bun`
 

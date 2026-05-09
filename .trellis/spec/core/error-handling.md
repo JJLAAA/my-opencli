@@ -129,7 +129,7 @@ try {
   await runCli();
 } catch (error) {
   console.error(JSON.stringify({ error: { code: 'internal_error', message: error.message, ... } }));
-  process.exit(1);
+  // Then exit with general_error.
 }
 ```
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Consolidate Spec"
+  short_description: "整理 Trellis spec 冗余、冲突与路由问题"
+  default_prompt: "Use $consolidate-spec to analyze and plan consolidation for this project's .trellis/spec directory."

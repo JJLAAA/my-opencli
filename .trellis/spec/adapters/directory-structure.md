@@ -6,7 +6,7 @@
 
 ## Overview
 
-"Frontend" in TAP refers to **adapters** — the user-facing DSL files that define what to fetch and how to transform it. Adapters are the extension point; the core engine is backend.
+TAP adapters are the user-facing extension point — declarative `.js` files that define what to fetch and how to transform it. The core engine (`src/`) handles execution.
 
 ---
 

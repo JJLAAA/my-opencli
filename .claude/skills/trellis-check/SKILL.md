@@ -9,6 +9,18 @@ Comprehensive quality verification for recently written code. Combines spec comp
 
 ---
 
+## Step 0: Clarify Check Mode
+
+Before proceeding, ask the user:
+
+> Is this a **final check** (before commit / `finish-work`) or an **interim check** (mid-task sanity check)?
+> - **Final**: runs all steps including PRD scope alignment
+> - **Interim**: skips PRD alignment, runs quality checks only
+
+Record the answer and proceed accordingly.
+
+---
+
 ## Step 1: Identify What Changed
 
 ```bash
@@ -56,7 +68,21 @@ Run the project's lint, type-check, and test commands. Fix any failures before p
 
 > "If I fixed a bug or discovered something non-obvious, should I document it so future me won't hit the same issue?" → If YES, update the relevant spec doc.
 
-## Step 5: Cross-Layer Dimensions (if applicable)
+## Step 5: PRD Scope Alignment (final check only)
+
+**Skip this step if this is an interim check.**
+
+Read `{TASK_DIR}/prd.md` (resolve task dir via `python3 ./.trellis/scripts/task.py current`).
+
+For each requirement listed in `prd.md`:
+- [ ] Is it implemented? (**no missing features**)
+- [ ] Is the implementation limited to what is specified? (**no extra scope**)
+
+If `prd.md` is not present, skip this step and note the absence in the report.
+
+---
+
+## Step 6: Cross-Layer Dimensions (if applicable)
 
 Skip this step if your change is confined to a single layer.
 
@@ -87,6 +113,6 @@ Skip this step if your change is confined to a single layer.
 
 ---
 
-## Step 6: Report and Fix
+## Step 7: Report and Fix
 
 Report violations found and fix them directly. Re-run project checks after fixes.

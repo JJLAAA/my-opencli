@@ -30,7 +30,7 @@ These guides help you **ask the right questions before coding**.
 
 ### When to Think About Cross-Layer Issues
 
-- [ ] Feature touches 3+ layers (API, Service, Component, Database)
+- [ ] Feature touches 3+ project areas (CLI dispatch, runtime module, output schema, docs, packaging)
 - [ ] Data format changes between layers
 - [ ] Multiple consumers need the same data
 - [ ] You're not sure where to put some logic
@@ -49,16 +49,16 @@ These guides help you **ask the right questions before coding**.
 
 ---
 
-## Pre-Modification Rule (CRITICAL)
+## Pre-Modification Rule
 
-> **Before changing ANY value, ALWAYS search first!**
+Before changing a value, command, field name, path, or generated template list, search for related references first. For deeper prompts, use the [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md).
 
 ```bash
 # Search for the value you're about to change
-grep -r "value_to_change" .
+rg "value_to_change"
 ```
 
-This single habit prevents most "forgot to update X" bugs.
+This directory is a thinking checklist. Concrete contracts belong in the layer spec files under `core/` and `adapters/`.
 
 ---
 
