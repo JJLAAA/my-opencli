@@ -866,3 +866,36 @@ Created the consolidate-spec skill and consolidated Trellis spec documentation w
 ### Next Steps
 
 - None - task complete
+
+
+## Session 22: Update tap-adapter-author skill: Pattern F + recon rules
+
+**Date**: 2026-05-10
+**Task**: Update tap-adapter-author skill: Pattern F + recon rules
+**Branch**: `main`
+
+### Summary
+
+Added Pattern F (login-state HTML partial/infinite-scroll), 403-response decision gate, sensitive-param gate, expanded recon checklist, three-tier limit verification, data-access priority ladder. Version bumped to 0.1.2. Pushed to main for GitHub workflow publish.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7e58f04` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

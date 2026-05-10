@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 21
-- **Last Active**: 2026-05-09
+- **Total Sessions**: 22
+- **Last Active**: 2026-05-10
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~868 | Active |
+| `journal-1.md` | ~901 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 22 | 2026-05-10 | Update tap-adapter-author skill: Pattern F + recon rules | `7e58f04` | `main` |
 | 21 | 2026-05-09 | Create consolidate spec skill | `07e8da0` | `main` |
 | 20 | 2026-05-06 | Agent-Friendly CLI: --fields mask & help examples | `8714045` | `main` |
 | 19 | 2026-05-06 | Complete split npm binary packages | `7649b20`, `b511855`, `9a6d99c` | `main` |
