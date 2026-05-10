@@ -13,6 +13,7 @@ This is an infra/cross-layer contract because these files must agree:
 - `scripts/build-npm.js`
 - `scripts/publish-npm.js`
 - `.github/workflows/publish-npm.yml`
+- `package-lock.json`
 - `npm/package.json`
 - `npm/run.js`
 - `npm/install.js`
@@ -58,6 +59,7 @@ Platform package names:
   - `platforms/`
   - compiled platform binaries
 - Main package `optionalDependencies` must pin each platform package to the same version as root `package.json`.
+- Root `package-lock.json` must stay aligned with root `package.json` for package name, version, and `bin` metadata.
 - Each platform package contains exactly:
   - `package.json`
   - `bin/tap`
@@ -80,6 +82,7 @@ Platform package names:
 |------|-------------------|
 | `bun run build:npm` | Creates `npm/platforms/<package>/bin/tap` for each supported platform and updates npm package versions |
 | `node npm/run.js --version` after build | Uses local fallback binary and prints `tap <version>` |
+| Version bump | `package.json`, `package-lock.json`, `npm/package.json`, and generated platform package metadata all use the same version |
 | Published install on supported platform | npm installs only the compatible optional platform package; `tap` runs through the main wrapper |
 | Published install missing platform package | `npm/run.js` exits non-zero and asks user to reinstall `@leolee812/tap` |
 | Unsupported OS/CPU | `npm/run.js` exits non-zero with `tap: unsupported platform <platform>-<arch>` |
@@ -111,10 +114,12 @@ npm --cache /tmp/tap-npm-cache pack --dry-run
 cd npm/platforms/tap-darwin-arm64 && npm --cache /tmp/tap-npm-cache pack --dry-run
 cd ../tap-darwin-x64 && npm --cache /tmp/tap-npm-cache pack --dry-run
 cd ../tap-linux-x64 && npm --cache /tmp/tap-npm-cache pack --dry-run
+rg "<old-version>|<old-package-name>|<old-bin-name>" package.json package-lock.json npm/package.json npm/platforms
 ```
 
 Assertion points:
 
+- `package-lock.json` root package name, version, and `bin` metadata match `package.json`.
 - Main package tarball contains `run.js`, `install.js`, `package.json`, and `skills/` only.
 - Main package tarball does not contain `bin/tap`, `binaries/`, or `platforms/`.
 - Each platform package tarball contains one compiled `bin/tap`.
