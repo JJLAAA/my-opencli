@@ -932,3 +932,38 @@ Added tap browser restart to stop and relaunch the Agent Chrome instance, update
 ### Next Steps
 
 - None - task complete
+
+
+## Session 24: Bump npm version for browser restart release
+
+**Date**: 2026-05-10
+**Task**: Bump npm version for browser restart release
+**Branch**: `main`
+
+### Summary
+
+Bumped tap npm distribution to 0.1.3 for the browser restart release, verified npm package build and pack behavior, documented lockfile alignment, and added a spec rule requiring version bumps for code logic or bundled resource changes shipped through npm.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cb1e46e` | (see git log) |
+| `f74d508` | (see git log) |
+| `1fbff5b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

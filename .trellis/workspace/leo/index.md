@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 23
+- **Total Sessions**: 24
 - **Last Active**: 2026-05-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~934 | Active |
+| `journal-1.md` | ~969 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 24 | 2026-05-10 | Bump npm version for browser restart release | `cb1e46e`, `f74d508`, `1fbff5b` | `main` |
 | 23 | 2026-05-10 | Add tap browser restart command | `62907cc` | `main` |
 | 22 | 2026-05-10 | Update tap-adapter-author skill: Pattern F + recon rules | `7e58f04` | `main` |
 | 21 | 2026-05-09 | Create consolidate spec skill | `07e8da0` | `main` |
