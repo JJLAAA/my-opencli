@@ -6,7 +6,7 @@
 
 ## Scope / Trigger
 
-Use this contract when changing npm package layout, platform binary build outputs, publish scripts, or the npm wrapper runtime.
+Use this contract when changing npm package layout, platform binary build outputs, publish scripts, the npm wrapper runtime, application logic, or bundled resources shipped through the npm package.
 
 This is an infra/cross-layer contract because these files must agree:
 
@@ -60,6 +60,8 @@ Platform package names:
   - compiled platform binaries
 - Main package `optionalDependencies` must pin each platform package to the same version as root `package.json`.
 - Root `package-lock.json` must stay aligned with root `package.json` for package name, version, and `bin` metadata.
+- Any change to application logic or bundled resources must include a version bump before publishing so users can receive the update through npm.
+- Use a small semver iteration for routine code logic and bundled resource changes; patch versions are the default for backward-compatible fixes or additions.
 - Each platform package contains exactly:
   - `package.json`
   - `bin/tap`
@@ -83,6 +85,7 @@ Platform package names:
 | `bun run build:npm` | Creates `npm/platforms/<package>/bin/tap` for each supported platform and updates npm package versions |
 | `node npm/run.js --version` after build | Uses local fallback binary and prints `tap <version>` |
 | Version bump | `package.json`, `package-lock.json`, `npm/package.json`, and generated platform package metadata all use the same version |
+| Code logic or bundled resource change | Release commit includes a small version bump so GitHub Actions publishes a new npm version instead of skipping the existing one |
 | Published install on supported platform | npm installs only the compatible optional platform package; `tap` runs through the main wrapper |
 | Published install missing platform package | `npm/run.js` exits non-zero and asks user to reinstall `@leolee812/tap` |
 | Unsupported OS/CPU | `npm/run.js` exits non-zero with `tap: unsupported platform <platform>-<arch>` |
@@ -97,8 +100,10 @@ Platform package names:
 
 - Good: `npm --cache /tmp/tap-npm-cache pack --dry-run` in `npm/` shows kilobyte-scale main package contents.
 - Base: `npm --cache /tmp/tap-npm-cache pack --dry-run` in `npm/platforms/tap-darwin-arm64/` shows exactly `bin/tap` and `package.json`.
+- Good: a CLI logic change or bundled skill/resource update is paired with a patch version bump before running the publish workflow.
 - Bad: main package `files` includes `binaries/` or `platforms/`, causing every user to download all platform binaries.
 - Bad: root `package.json`, `npm/package.json`, and platform package versions drift.
+- Bad: code logic or bundled resources changed but root `package.json` kept the already-published version, causing the publish workflow to skip the update.
 
 ---
 
