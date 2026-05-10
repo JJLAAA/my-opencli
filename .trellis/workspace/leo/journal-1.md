@@ -967,3 +967,36 @@ Bumped tap npm distribution to 0.1.3 for the browser restart release, verified n
 ### Next Steps
 
 - None - task complete
+
+
+## Session 25: Update tap adapter author skill dependencies
+
+**Date**: 2026-05-10
+**Task**: Update tap adapter author skill dependencies
+**Branch**: `main`
+
+### Summary
+
+Updated the bundled tap-adapter-author skill to declare runtime dependencies, remind users about tap CLI, chrome-devtools, tap browser start sessions, and network access, and bumped the npm package version to 0.1.4 for the shipped skill resource.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7004699` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
