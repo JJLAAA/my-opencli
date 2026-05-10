@@ -2,6 +2,7 @@
 name: tap-adapter-author
 description: Use when writing a TAP adapter for a new site or command. Guides from reconnaissance through pipeline assembly, installation, and verification.
 allowed-tools: Bash, Read, Write, Edit
+compatibility: Requires installed tap CLI, chrome-devtools tool access for reconnaissance, a usable tap browser session when browser/login state is needed, and network access to the target site.
 ---
 
 # tap-adapter-author
@@ -9,6 +10,8 @@ allowed-tools: Bash, Read, Write, Edit
 你是给 TAP 写适配器的 agent。目标：**从零到 `tap <site> <command>` 输出正确数据的完整闭环**。
 
 TAP 适配器是纯声明式的——没有自定义函数，只有 pipeline 步骤。
+
+开始前，先简短提醒用户本 workflow 需要：已安装可运行的 `tap` CLI；可用于侦察的 `chrome-devtools` 工具访问；当目标站点需要浏览器或登录态时，有可用的 `tap browser start` 浏览器会话；并且当前环境能访问目标站点和候选端点。
 
 ---
 
@@ -57,6 +60,12 @@ DONE
 ## Runbook
 
 ```
+[ ] 0. 提醒运行依赖
+       [ ] 简短提醒用户：需要已安装可运行的 tap CLI
+       [ ] 需要 chrome-devtools 工具访问来做页面和 Network 侦察
+       [ ] 目标站点需要浏览器或登录态时，需要可用的 tap browser start 浏览器会话
+       [ ] 需要能访问目标站点和候选 endpoint 的网络
+
 [ ] 1. 明确目标
        [ ] 站点域名是什么？
        [ ] 想抓什么数据（列表 / 单条 / 排行）？
@@ -126,12 +135,14 @@ DONE
 
 [ ] 8. 验证
        [ ] 运行 tap <site> <command>
+       [ ] 运行 tap <site> <command> --format json
        [ ] 确认 JSON 是 { meta, schema, items } envelope
        [ ] 确认 schema.properties 与 output.fields 一致
        [ ] 确认 items 只包含 schema 声明字段
        [ ] 检查行数、字段值是否与页面一致
        [ ] limit 验证（三档必测）：
            [ ] 测试 tap <site> <command> --limit 3（小值）
+           [ ] 测试 tap <site> <command> --limit 3 --format json（小值 JSON）
            [ ] 测试 tap <site> <command>（默认 limit，确认条数符合 default 值）
            [ ] 测试 tap <site> <command> --limit <default+10>（超出首屏/首页数量）
            ⚠️ 依赖无限滚动或分页的 adapter，必须验证超出首屏的数据能正确拉取
@@ -180,7 +191,7 @@ DONE
 - `output.fields` 是 JSON 输出契约，必须由用户确认后写入；不要从字段名或样例值静默猜最终 schema
 - JSON 输出只包含 `output.fields` 声明的字段；未声明字段会被 runtime 丢弃
 - `columns` 只决定表格列顺序，必须与 schema/map 输出字段对齐
-- 需要浏览器的适配器（Pattern B/D/E/F，以及使用 `browserFetch` 的 Pattern C）要求本地 Chrome 以 `--remote-debugging-port=9222` 启动
+- 需要浏览器的适配器（Pattern B/D/E/F，以及使用 `browserFetch` 的 Pattern C）要求有可用的 `tap browser start` 浏览器会话
 - 适配器路径：`~/.tap/adapters/<site>/<command>.js`（`<site>` 通常是域名主体，如 `bilibili`、`linuxdo`）
 - 调试过程中的临时 JSON 文件只落在 `/tmp/`，不要留在项目目录
 

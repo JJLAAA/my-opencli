@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/core/directory-structure.md", "reason": "Bundled skills live under skills/tap-adapter-author and are part of package assets"}
+{"file": ".trellis/spec/core/npm-distribution.md", "reason": "Bundled resources ship through npm package skills directory"}

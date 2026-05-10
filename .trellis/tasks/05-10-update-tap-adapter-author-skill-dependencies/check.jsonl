@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/core/npm-distribution.md", "reason": "Check bundled resource changes against package asset expectations"}
+{"file": ".trellis/spec/core/directory-structure.md", "reason": "Verify bundled skill location and asset scope"}
