@@ -899,3 +899,36 @@ Added Pattern F (login-state HTML partial/infinite-scroll), 403-response decisio
 ### Next Steps
 
 - None - task complete
+
+
+## Session 23: Add tap browser restart command
+
+**Date**: 2026-05-10
+**Task**: Add tap browser restart command
+**Branch**: `main`
+
+### Summary
+
+Added tap browser restart to stop and relaunch the Agent Chrome instance, updated schema/docs/spec contracts, and verified help, schema, build, npm build, and real browser restart behavior.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `62907cc` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

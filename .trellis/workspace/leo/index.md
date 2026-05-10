@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 22
+- **Total Sessions**: 23
 - **Last Active**: 2026-05-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~901 | Active |
+| `journal-1.md` | ~934 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 23 | 2026-05-10 | Add tap browser restart command | `62907cc` | `main` |
 | 22 | 2026-05-10 | Update tap-adapter-author skill: Pattern F + recon rules | `7e58f04` | `main` |
 | 21 | 2026-05-09 | Create consolidate spec skill | `07e8da0` | `main` |
 | 20 | 2026-05-06 | Agent-Friendly CLI: --fields mask & help examples | `8714045` | `main` |
