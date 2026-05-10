@@ -26,6 +26,13 @@ const MANAGEMENT_COMMANDS = {
     description: 'Stop the running Chrome browser.',
     args: [],
   },
+  'browser restart': {
+    description: 'Restart the Chrome browser for automation.',
+    args: [
+      { name: 'headless', type: 'boolean', description: 'Run Chrome in headless mode after restart.' },
+      { name: 'foreground', type: 'boolean', description: 'Run Chrome in a visible window after restart.' },
+    ],
+  },
   setup: {
     description: 'Initialize local TAP files explicitly.',
     args: [

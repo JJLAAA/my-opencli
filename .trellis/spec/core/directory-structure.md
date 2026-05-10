@@ -66,6 +66,7 @@ tap setup [--force]
 tap browser start [--headless] [--foreground]
 tap browser status
 tap browser stop
+tap browser restart [--headless] [--foreground]
 tap doctor
 tap adapter install <source> [--force]
 tap adapter list

@@ -17,13 +17,14 @@ tap setup [--force]
 tap browser start [--headless] [--foreground]
 tap browser status
 tap browser stop
+tap browser restart [--headless] [--foreground]
 tap doctor
 ```
 
 Core modules:
 
 - `src/setup.js`: exports `runSetup(options)`, `formatSetupResult(result)`, `setupHelp()`
-- `src/browser.js`: exports `startBrowser(options)`, `browserStatus()`, `stopBrowser()`, formatters, and `browserHelp(command)`
+- `src/browser.js`: exports `startBrowser(options)`, `browserStatus()`, `stopBrowser()`, `restartBrowser(options)`, formatters, and `browserHelp(command)`
 - `src/doctor.js`: exports `runDoctor()`, `formatDoctorResult(result)`, `doctorHelp()`
 - `src/config.js`: exports default paths and configuration helpers
 
@@ -44,6 +45,7 @@ Default local state:
 - `tap browser start` creates the configured Chrome profile directory before spawning Chrome.
 - `tap browser start` starts headed Chrome minimized by default with `--start-minimized`; `--foreground` opts back into normal headed startup.
 - `tap browser start --headless` keeps the existing no-window mode and must not add `--start-minimized`.
+- `tap browser restart` requests shutdown through CDP, waits for the configured endpoint to become unreachable, then starts a new agent Chrome using the same start options.
 - Browser-backed adapter runs create an `about:blank` CDP target through the Browser websocket using `Target.createTarget({ url, background: true })` before connecting to that page target. This is a best-effort focus-reduction hint; cleanup still uses `closeTab(base, targetId)`.
 
 Side commands must route in `src/cli.js` before adapter discovery and delegate all behavior to focused `src/` modules.
@@ -60,6 +62,7 @@ Side commands must route in `src/cli.js` before adapter discovery and delegate a
 | `tap browser status` cannot reach CDP | Exit non-zero and print endpoint plus connection error |
 | `tap browser start` cannot find Chrome | Exit non-zero and ask user to set `TAP_CHROME_PATH` |
 | `tap browser stop` when CDP is unreachable | Exit zero and report that agent Chrome was not running |
+| `tap browser restart` when CDP is unreachable | Exit zero if a new agent Chrome starts successfully |
 | `tap doctor` has any failed required check | Exit non-zero and print suggested next steps |
 
 ---

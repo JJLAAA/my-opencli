@@ -52,6 +52,19 @@ export function browserHelp(command) {
     ].join('\n');
   }
 
+  if (command === 'restart') {
+    return [
+      'Usage: tap browser restart [--headless] [--foreground]',
+      '',
+      'Restarts the agent Chrome with remote debugging enabled.',
+      'Useful when the agent Chrome starts receiving normal system links.',
+      '',
+      'Options:',
+      '  --headless     Run Chrome without a visible window after restart',
+      '  --foreground   Start headed Chrome normally instead of minimized',
+    ].join('\n');
+  }
+
   return [
     'Usage: tap browser <command>',
     '',
@@ -59,6 +72,7 @@ export function browserHelp(command) {
     '  start             Start agent Chrome',
     '  status            Check CDP connectivity',
     '  stop              Close agent Chrome through CDP',
+    '  restart           Restart agent Chrome',
   ].join('\n');
 }
 
@@ -132,6 +146,34 @@ export async function stopBrowser() {
 
   await closeBrowser(status.endpoint);
   return { stopped: true, endpoint: status.endpoint };
+}
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function waitForBrowserStopped(endpoint, { attempts = 20, delayMs = 250 } = {}) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const status = await browserStatus();
+    if (!status.ok) return { stopped: true, endpoint, attempts: attempt + 1 };
+    await wait(delayMs);
+  }
+
+  return { stopped: false, endpoint, attempts };
+}
+
+export async function restartBrowser(options = {}) {
+  const stopped = await stopBrowser();
+  const waitResult = stopped.stopped
+    ? await waitForBrowserStopped(stopped.endpoint)
+    : { stopped: true, endpoint: stopped.endpoint, attempts: 0 };
+
+  if (!waitResult.stopped) {
+    throw new Error(`Timed out waiting for agent Chrome to stop: ${waitResult.endpoint}`);
+  }
+
+  const started = await startBrowser(options);
+  return { stopped, started };
 }
 
 export function formatBrowserStatus(status) {

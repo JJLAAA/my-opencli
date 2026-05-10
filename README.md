@@ -149,11 +149,13 @@ tap schema
 tap schema <site>
 tap schema <site> <command>
 tap schema browser start
+tap schema browser restart
 
 # Manage agent Chrome
 tap browser start
 tap browser status
 tap browser stop
+tap browser restart
 
 # Install, list, or remove adapter packs
 tap adapter install github:<owner>/<repo>
@@ -203,6 +205,7 @@ tap schema <site> <command>
 
 # Inspect one management command
 tap schema browser start
+tap schema browser restart
 tap schema doctor
 ```
 
@@ -261,6 +264,9 @@ tap browser start
 tap browser stop
 # → { "stopped": true, "endpoint": "..." }
 
+tap browser restart
+# → { "stopped": {...}, "started": {...} }
+
 # Setup
 tap setup
 # → { "directories": [...], "config": { "path": "...", "written": true }, ... }
@@ -284,7 +290,7 @@ tap adapter remove <pack-name>
 |----------|---------|-------------|
 | `TAP_CDP_ENDPOINT` | `http://127.0.0.1:9222` | Chrome DevTools Protocol endpoint for browser-based adapters |
 | `TAP_ADAPTERS_DIR` | _(none)_ | Additional directory to search for adapters (takes priority over user adapters) |
-| `TAP_CHROME_PATH` | _(auto-detected)_ | Chrome executable path used by `tap browser start` |
+| `TAP_CHROME_PATH` | _(auto-detected)_ | Chrome executable path used by `tap browser start` and `tap browser restart` |
 
 ### Adapter Search Order
 
@@ -731,7 +737,7 @@ tap browser start
 tap doctor
 ```
 
-`tap browser start` uses a dedicated automation profile (`~/.chrome-automation-profile` by default) so agent browsing is separate from your daily Chrome profile. Headed Chrome starts minimized by default; use `tap browser start --foreground` if you want the window opened normally, or `tap browser start --headless` for a fully hidden browser. Log into target sites inside this agent Chrome profile only when an adapter needs login state. TAP auto-detects whether an adapter needs the browser by scanning its pipeline steps. A background tab is opened per run where Chrome supports it and closed when done.
+`tap browser start` uses a dedicated automation profile (`~/.chrome-automation-profile` by default) so agent browsing is separate from your daily Chrome profile. Headed Chrome starts minimized by default; use `tap browser start --foreground` if you want the window opened normally, or `tap browser start --headless` for a fully hidden browser. If agent Chrome starts receiving normal system links after your daily Chrome restarts, start daily Chrome first and then run `tap browser restart`. Log into target sites inside this agent Chrome profile only when an adapter needs login state. TAP auto-detects whether an adapter needs the browser by scanning its pipeline steps. A background tab is opened per run where Chrome supports it and closed when done.
 
 ---
 

@@ -153,11 +153,13 @@ tap schema
 tap schema <site>
 tap schema <site> <command>
 tap schema browser start
+tap schema browser restart
 
 # 管理 Agent Chrome
 tap browser start
 tap browser status
 tap browser stop
+tap browser restart
 
 # 安装、列表或移除适配器包
 tap adapter install github:<owner>/<repo>
@@ -207,6 +209,7 @@ tap schema <site> <command>
 
 # 查看某个管理命令
 tap schema browser start
+tap schema browser restart
 tap schema doctor
 ```
 
@@ -265,6 +268,9 @@ tap browser start
 tap browser stop
 # → { "stopped": true, "endpoint": "..." }
 
+tap browser restart
+# → { "stopped": {...}, "started": {...} }
+
 # 初始化
 tap setup
 # → { "directories": [...], "config": { "path": "...", "written": true }, ... }
@@ -288,7 +294,7 @@ tap adapter remove <pack-name>
 |------|--------|------|
 | `TAP_CDP_ENDPOINT` | `http://127.0.0.1:9222` | 浏览器适配器使用的 Chrome DevTools Protocol 端点 |
 | `TAP_ADAPTERS_DIR` | _（无）_ | 额外的适配器搜索目录（优先于用户适配器） |
-| `TAP_CHROME_PATH` | _（自动检测）_ | `tap browser start` 使用的 Chrome 可执行文件路径 |
+| `TAP_CHROME_PATH` | _（自动检测）_ | `tap browser start` 和 `tap browser restart` 使用的 Chrome 可执行文件路径 |
 
 ### 适配器搜索顺序
 
@@ -737,7 +743,7 @@ tap doctor
 
 TAP 会自动扫描 pipeline 步骤判断是否需要浏览器，每次运行新建一个标签页，结束后自动关闭。
 
-`tap browser start` 默认使用专用自动化 profile（`~/.chrome-automation-profile`），让 Agent 浏览器与日常 Chrome profile 分离。有头 Chrome 默认以最小化方式启动；如果希望正常打开窗口，使用 `tap browser start --foreground`，如果需要完全隐藏浏览器，使用 `tap browser start --headless`。只有某个适配器需要登录态时，才需要在这个 Agent Chrome profile 中登录目标网站一次。之后 TAP 会复用该 profile 的 cookie 和本地状态。TAP 每次运行会尽量创建后台标签页，并在结束后关闭。
+`tap browser start` 默认使用专用自动化 profile（`~/.chrome-automation-profile`），让 Agent 浏览器与日常 Chrome profile 分离。有头 Chrome 默认以最小化方式启动；如果希望正常打开窗口，使用 `tap browser start --foreground`，如果需要完全隐藏浏览器，使用 `tap browser start --headless`。如果日常 Chrome 重启后，Agent Chrome 开始接收系统外链，先启动日常 Chrome，再运行 `tap browser restart`。只有某个适配器需要登录态时，才需要在这个 Agent Chrome profile 中登录目标网站一次。之后 TAP 会复用该 profile 的 cookie 和本地状态。TAP 每次运行会尽量创建后台标签页，并在结束后关闭。
 
 ---
 

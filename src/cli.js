@@ -7,6 +7,7 @@ import { installSkill, skillHelp } from './skills.js';
 import { runSetup, setupHelp } from './setup.js';
 import {
   browserHelp,
+  restartBrowser,
   browserStatus,
   startBrowser,
   stopBrowser,
@@ -254,6 +255,13 @@ async function runBrowserCommand(tokens) {
       if (rest.length)
         fail(`Unknown argument: ${rest[0]}\n\n${browserHelp('stop')}`, { code: 'unknown_argument', exitCode: EXIT_USAGE });
       const result = await stopBrowser();
+      console.log(JSON.stringify(result, null, 2));
+      process.exit(0);
+    }
+
+    if (command === 'restart') {
+      const options = parseBooleanFlags(rest, ['headless', 'foreground'], browserHelp('restart'));
+      const result = await restartBrowser(options);
       console.log(JSON.stringify(result, null, 2));
       process.exit(0);
     }
