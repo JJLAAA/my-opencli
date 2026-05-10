@@ -1,23 +1,30 @@
 # TAP 适配器 Pattern 参考
 
-五种获取模式，判断后套对应 pipeline 模板。
+六种获取模式，判断后套对应 pipeline 模板。
 
 ---
 
 ## 如何判断 Pattern
 
-在浏览器打开目标页面 → DevTools → Network → 过滤 Fetch/XHR：
+**第一步**：先在浏览器打开目标页面，确认页面可访问 + TAP browser 已登录。
+
+**第二步**：侦察 Network → 过滤 Fetch/XHR + 侦察 DOM：
 
 ```
 有 JSON 请求？
   ├─ 是 → 可以直接 curl 访问（不需要 cookie）？
   │         ├─ 是 → Pattern A（公开 API）
   │         └─ 否 → 需要登录 cookie？
-  │                   ├─ 是 → Pattern B（browserFetch）
+  │                   ├─ 是 → Pattern B（browserFetch JSON API）
   │                   └─ 签名/token 不可复现 → Pattern D（intercept）
   ├─ 单个命令需要 list → detail 多个请求？ → Pattern C（as/from/foreach）
-  └─ 否 → 数据直接在 HTML 页面里 → Pattern E（DOM 提取）
+  └─ 否（无 JSON 请求，或 JSON 返回 403/HTML）→
+       ├─ 页面已登录 + 有同源 HTML partial endpoint？ → Pattern F（HTML partial + DOMParser）
+       ├─ 数据直接在 HTML DOM 里（custom element attributes / 渲染文本）？ → Pattern E（DOM 提取）
+       └─ 以上均不可行 → 考虑 OAuth / token（最后手段，需向用户说明原因）
 ```
+
+⚠️ **公开 JSON 返回 403 或 HTML ≠ 必须 OAuth**。应先按顺序排查 Pattern F → E，再考虑 token。
 
 ---
 
@@ -236,3 +243,97 @@ export default {
 - `evaluate` 结果已经是数组时，`map` 步骤主要用于列名对齐，可以省略
 - 如果页面是 SPA 且数据异步加载，navigate 后会等 800ms，通常够用；不够就改用 Pattern B/D
 - `?.` 可选链很重要，DOM 元素可能不存在
+
+---
+
+## Pattern F — 登录态 HTML partial / infinite-scroll endpoint
+
+**特征**：公开 JSON API 不可用（403/HTML），但页面已登录，站点有同源 HTML partial endpoint（如 `/svc/`、`/api/partial/`），或 infinite-scroll loader 携带下一页 src；用 DOMParser 解析 HTML 即可提取结构化数据。
+
+**典型迹象**：
+- 页面渲染正常，但 `.json` 或 `/api/` 返回 403
+- DOM 中有 `faceplate-partial[slot="load-after"][src]` 等分页 loader
+- Network 有同源请求返回 `text/html`，HTML 中含 custom element（如 `<shreddit-post>`）或列表结构
+
+```js
+export default {
+  args: [
+    { name: 'limit', default: 25, description: 'Maximum number of items to return.' },
+    { name: 'category', default: 'hot', description: 'Feed category, e.g. hot / new / top.' },
+  ],
+  output: {
+    type: 'list',
+    itemName: 'item',
+    fields: {
+      title:        { type: 'string',  description: 'Item title.' },
+      url:          { type: 'string',  description: 'Item permalink URL.', format: 'url' },
+      score:        { type: 'integer', description: 'Vote score.', unit: 'points' },
+      commentCount: { type: 'integer', description: 'Number of comments.', unit: 'comments' },
+      author:       { type: 'string',  description: 'Author username.' },
+    },
+  },
+  columns: ['score', 'commentCount', 'author', 'title', 'url'],
+  pipeline: [
+    { navigate: 'https://example.com/${{ args.category }}/' },
+    { evaluate: `(async () => {
+        const limit    = Number('${{ args.limit }}') || 25;
+        const category = '${{ args.category }}';
+        const results  = [];
+        const seen     = new Set();
+
+        // 首页 partial endpoint（根据实际站点路径调整）
+        let nextUrl = '/svc/example/community-posts/' + category + '/?name=example';
+
+        for (let page = 0; page < 8 && nextUrl && results.length < limit; page++) {
+          const res = await fetch(nextUrl, {
+            credentials: 'include',
+            headers: { Accept: 'text/html, */*' },
+          });
+
+          if (!res.ok) throw new Error('Partial request failed: HTTP ' + res.status);
+
+          const html = await res.text();
+          const doc  = new DOMParser().parseFromString(html, 'text/html');
+
+          for (const el of doc.querySelectorAll('item-element-selector')) {
+            const id = el.getAttribute('id') || el.getAttribute('permalink');
+            if (!id || seen.has(id)) continue;
+            seen.add(id);
+
+            results.push({
+              title:        el.getAttribute('post-title') || '',
+              url:          new URL(el.getAttribute('permalink') || '', location.origin).href,
+              score:        Number(el.getAttribute('score'))         || 0,
+              commentCount: Number(el.getAttribute('comment-count')) || 0,
+              author:       el.getAttribute('author')                || '',
+            });
+
+            if (results.length >= limit) break;
+          }
+
+          // 跟随分页：找下一页 partial src（根据实际 selector 调整）
+          nextUrl = doc.querySelector('[slot="load-after"][src]')?.getAttribute('src') || '';
+        }
+
+        return results;
+      })()` },
+    { map: {
+      title:        '${{ item.title }}',
+      url:          '${{ item.url }}',
+      score:        '${{ item.score }}',
+      commentCount: '${{ item.commentCount }}',
+      author:       '${{ item.author }}',
+    }},
+    { limit: '${{ args.limit }}' },
+  ],
+};
+```
+
+**注意**：
+- `navigate` 必须先执行，建立登录态 cookie 上下文；partial endpoint 的 `credentials: include` 依赖这一步
+- `nextUrl` 初始值是首页 partial URL，后续从 DOM 的 load-after 元素提取；按实际站点调整 selector
+- 用 `seen` Set 去重，避免跨页 item 重复
+- 字段值从 custom element attributes 读取，用 `?.` 做可选链防空
+- 分页上限（`page < 8`）防止无限循环；实际可按站点调整
+- 优先用 partial endpoint 分页；若无 load-after，再考虑 scroll trigger（Pattern D 的 `scroll`）
+- 此 Pattern 的 evaluate 代码较长；确保模板表达式 `${{ }}` 内容在字符串拼接时不含换行歧义
