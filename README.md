@@ -10,6 +10,12 @@ tap <site> <command> [--key value]
 
 TAP 是 [opencli](https://github.com/jackwener/opencli) 的轻量版本。核心区别是浏览器隔离：TAP 将 Chrome 视为专供 Agent 使用的操作平台，而不是通过 daemon + extension 控制用户日常使用的 Chrome。
 
+AI Agent 落地的核心工程难点之一，是把模型的不确定性限制在合适的位置。模型擅长理解人的意图、拆解任务、选择下一步；但在在线数据浏览场景里，如果让模型每次临场处理页面结构、HTTP 请求、登录态、分页和字段抽取，执行路径就会变得不稳定，也会消耗大量 token。
+
+TAP 的设计目标，是把“意图表达”和“数据执行”分离开：Agent 负责说明想要什么数据，TAP adapter 负责用声明式 pipeline 稳定地执行请求、解析和输出。这样既能保留 Agent 的意图理解能力，又能把外部数据访问收敛为可验证、可复用、低 token 消耗的 CLI 契约。
+
+从这个角度看，TAP 也是一种构建 Agent harness 的方式：把已有 HTTP 服务、网页接口和浏览器态数据源，封装成 Agent 友好的命令行工具，让 Agent 调用确定性的接口，而不是每次重新浏览和猜测。
+
 长期方向见：[TAP 长期规划：面向 Agent 的只读业务数据接入层](docs/readonly-data-access-roadmap.md)。
 
 ---
@@ -270,9 +276,237 @@ tap schema skill install
 
 ---
 
-## 6. 输出、错误和退出码
+## 6. 当前已支持站点示例
 
-### 6.1 JSON 输出格式
+下面示例基于当前已安装适配器。你的本地可用站点以 `tap schema` 或 `tap help` 输出为准。
+
+### 6.1 OpenAI 文章
+
+获取最近 7 天 Engineering 分类文章：
+
+```bash
+tap openai articles --limit 5
+```
+
+获取 Research 和 Engineering 两个分类，并限制返回字段：
+
+```bash
+tap openai articles \
+  --category "Research,Engineering" \
+  --days 14 \
+  --limit 10 \
+  --fields title,publishDate,category,url
+```
+
+按日期范围获取：
+
+```bash
+tap openai articles \
+  --category "Research,Engineering" \
+  --startDate 2026-05-01 \
+  --endDate 2026-05-11 \
+  --limit 20
+```
+
+抓取单篇 OpenAI 文章正文：
+
+```bash
+tap openai article \
+  --url https://openai.com/index/mrc-supercomputer-networking/ \
+  --fields title,date,category,url,content
+```
+
+| 命令 | 常用字段 |
+|------|----------|
+| `tap openai articles` | `title`, `publishDate`, `url`, `summary`, `category` |
+| `tap openai article` | `title`, `date`, `category`, `url`, `content` |
+
+### 6.2 Anthropic Engineering 文章
+
+获取 Anthropic Engineering 文章列表：
+
+```bash
+tap anthropic articles --limit 5
+```
+
+只返回标题、摘要、日期和链接：
+
+```bash
+tap anthropic articles \
+  --limit 10 \
+  --fields title,summary,date,url
+```
+
+抓取单篇 Anthropic 文章正文：
+
+```bash
+tap anthropic article \
+  --url https://www.anthropic.com/engineering/managed-agents \
+  --fields title,date,url,content
+```
+
+| 命令 | 常用字段 |
+|------|----------|
+| `tap anthropic articles` | `rank`, `title`, `summary`, `date`, `url` |
+| `tap anthropic article` | `title`, `date`, `content`, `url` |
+
+### 6.3 Claude Blog
+
+获取最近 7 天 Claude Blog 文章：
+
+```bash
+tap claude articles --limit 5 --days 7
+```
+
+获取最近 30 天文章并只返回摘要字段：
+
+```bash
+tap claude articles \
+  --days 30 \
+  --limit 20 \
+  --fields title,publishedDate,category,summary,url
+```
+
+抓取单篇 Claude Blog 正文：
+
+```bash
+tap claude post \
+  --url https://claude.com/blog/new-in-claude-managed-agents \
+  --fields title,publishedDate,category,url,content
+```
+
+| 命令 | 常用字段 |
+|------|----------|
+| `tap claude articles` | `title`, `publishedDate`, `category`, `summary`, `url` |
+| `tap claude post` | `title`, `publishedDate`, `category`, `content`, `url` |
+
+### 6.4 Simon Willison 博客
+
+获取最近 7 天文章：
+
+```bash
+tap simonwillison articles --days 7 --limit 10
+```
+
+获取最近 30 天文章，并只返回适合 Agent 摘要处理的字段：
+
+```bash
+tap simonwillison articles \
+  --days 30 \
+  --limit 20 \
+  --fields title,published,summary,url
+```
+
+抓取单篇文章或 quote post：
+
+```bash
+tap simonwillison post \
+  --url https://simonwillison.net/2026/May/9/luke-curley/ \
+  --fields title,date,type,url,content,tags
+```
+
+| 命令 | 常用字段 |
+|------|----------|
+| `tap simonwillison articles` | `title`, `url`, `published`, `summary` |
+| `tap simonwillison post` | `title`, `url`, `date`, `type`, `content`, `sourceUrl`, `tags` |
+
+### 6.5 宝玉文章
+
+获取最近中文文章：
+
+```bash
+tap baoyu articles --days 7 --limit 10
+```
+
+只返回摘要列表：
+
+```bash
+tap baoyu articles \
+  --days 30 \
+  --limit 20 \
+  --fields title,date,summary,url
+```
+
+| 命令 | 常用字段 |
+|------|----------|
+| `tap baoyu articles` | `title`, `url`, `summary`, `date` |
+
+### 6.6 Reddit
+
+Reddit 适配器使用浏览器会话。首次使用前建议启动 Agent Chrome，并在该 profile 中完成 Reddit 登录：
+
+```bash
+tap browser start --foreground
+tap doctor
+```
+
+获取某个 subreddit 的热门帖子：
+
+```bash
+tap reddit hot \
+  --subreddit AgentsOfAI \
+  --limit 10 \
+  --fields rank,title,score,comments,author,url
+```
+
+抓取单个帖子正文和评论树：
+
+```bash
+tap reddit thread \
+  --url https://www.reddit.com/r/codex/comments/1t7r2us/claude_code_is_not_on_the_same_level_as_codex/ \
+  --commentLimit 20 \
+  --depth 5 \
+  --fields title,author,selftext,score,commentCount,url,comments
+```
+
+| 命令 | 常用字段 |
+|------|----------|
+| `tap reddit hot` | `rank`, `title`, `score`, `comments`, `author`, `selftext`, `url` |
+| `tap reddit thread` | `postId`, `subreddit`, `title`, `author`, `selftext`, `score`, `upvoteRatio`, `commentCount`, `createdUtc`, `url`, `comments` |
+
+### 6.7 X / Twitter
+
+X 适配器使用浏览器会话。首次使用前启动 Agent Chrome，并在该 profile 中登录 X：
+
+```bash
+tap browser start --foreground
+tap doctor
+```
+
+抓取单条 X status 或 X Article：
+
+```bash
+tap x tweet \
+  --url https://x.com/user/status/1234567890 \
+  --fields authorName,authorHandle,title,text,url,comments
+```
+
+| 命令 | 常用字段 |
+|------|----------|
+| `tap x tweet` | `tweetId`, `authorName`, `authorHandle`, `title`, `text`, `url`, `comments` |
+
+### 6.8 让 Agent 先查 schema 再调用
+
+在工作流里，不要让 Agent 记住这些示例；让它先查询契约：
+
+```bash
+tap schema openai articles
+tap schema reddit thread
+tap schema x tweet
+```
+
+典型 Agent 调用顺序：
+
+```bash
+tap schema <site> <command>
+tap <site> <command> --fields <needed-fields> ...
+```
+
+---
+
+## 7. 输出、错误和退出码
+
+### 7.1 JSON 输出格式
 
 数据命令输出 JSON envelope：
 
@@ -306,7 +540,7 @@ tap schema skill install
 
 Runtime 不会从 row key 推断字段含义。适配器必须显式声明 `output.fields`，JSON 输出只包含 schema 声明过的字段。Pipeline 产出的额外字段会被丢弃。
 
-### 6.2 `--fields`
+### 7.2 `--fields`
 
 `--fields` 接受逗号分隔字段名：
 
@@ -322,7 +556,7 @@ tap <site> <command> --fields title,url
 - 适配器契约诊断始终按完整声明 schema 评估，不受 `--fields` 影响。
 - 如果没有任何有效字段匹配，会回退到完整 schema，并给出 warning。
 
-### 6.3 结构化错误
+### 7.3 结构化错误
 
 CLI 失败会在 stderr 输出 JSON：
 
@@ -340,7 +574,7 @@ CLI 失败会在 stderr 输出 JSON：
 
 适配器加载失败会包含适配器路径；当 TAP 能识别具体问题时，还会在 `error.details.diagnostics` 中提供行级诊断。
 
-### 6.4 退出码
+### 7.4 退出码
 
 | 码 | 名称 | 含义 | Agent 应对 |
 |----|------|------|------------|
@@ -354,7 +588,7 @@ CLI 失败会在 stderr 输出 JSON：
 
 适配器管理命令使用退出码 `2` 表示用法错误，退出码 `5` 表示下载或 clone 失败，退出码 `6` 表示包契约错误或文件冲突。
 
-### 6.5 管理命令 JSON 输出
+### 7.5 管理命令 JSON 输出
 
 ```bash
 tap doctor
@@ -389,7 +623,7 @@ Help 命令有意输出人类可读文本，不输出 JSON。
 
 ---
 
-## 7. 浏览器运行时
+## 8. 浏览器运行时
 
 使用 `navigate`、`evaluate`、`browserFetch` 或 `intercept` 的适配器需要运行中的 Agent Chrome。推荐流程：
 
@@ -424,9 +658,9 @@ TAP 会扫描适配器 pipeline 判断是否需要浏览器。需要浏览器时
 
 ---
 
-## 8. 适配器目录与环境变量
+## 9. 适配器目录与环境变量
 
-### 8.1 环境变量
+### 9.1 环境变量
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
@@ -434,7 +668,7 @@ TAP 会扫描适配器 pipeline 判断是否需要浏览器。需要浏览器时
 | `TAP_ADAPTERS_DIR` | 无 | 额外适配器搜索目录，优先于用户适配器 |
 | `TAP_CHROME_PATH` | 自动检测 | `tap browser start` 和 `tap browser restart` 使用的 Chrome 可执行文件路径 |
 
-### 8.2 适配器搜索顺序
+### 9.2 适配器搜索顺序
 
 设置 `TAP_ADAPTERS_DIR` 时：
 
@@ -449,7 +683,7 @@ TAP 会扫描适配器 pipeline 判断是否需要浏览器。需要浏览器时
 
 ---
 
-## 9. 适配器结构
+## 10. 适配器结构
 
 适配器是一个 ESM JavaScript 文件，默认导出一个对象：
 
@@ -512,7 +746,7 @@ export default {
 | `output.fields` | JSON 输出必填 | 机器可读字段契约，用于生成 JSON schema |
 | `pipeline` | 执行数据命令时需要 | Pipeline 引擎按顺序执行的步骤数组 |
 
-### 9.1 参数契约
+### 10.1 参数契约
 
 Adapter args 既是文档，也是运行时校验。应声明足够的元数据，让 Agent 不需要猜测就能正确调用命令。
 
@@ -539,7 +773,7 @@ tap <site> <command> --flag false
 
 ---
 
-## 10. Pipeline 步骤
+## 11. Pipeline 步骤
 
 每个步骤是一个只含单个 key 的对象，key 名就是操作类型。
 
@@ -558,7 +792,7 @@ tap <site> <command> --flag false
 | `sort` | 字段字符串或 `{ by, order? }` | 是，排序后的数组 | 否 | `order: 'desc'` 表示倒序。 |
 | `limit` | 数字或模板字符串 | 是，截取后的数组 | 否 | 通常放在最后。 |
 
-### 10.1 `fetch`
+### 11.1 `fetch`
 
 ```js
 { fetch: 'https://api.example.com/data' }
@@ -568,7 +802,7 @@ tap <site> <command> --flag false
 
 返回解析后的 JSON，不需要浏览器。
 
-### 10.2 `browserFetch`
+### 11.2 `browserFetch`
 
 ```js
 { browserFetch: { url: '/api/feed', as: 'feed' } }
@@ -576,7 +810,7 @@ tap <site> <command> --flag false
 
 在当前浏览器页面中执行 `fetch()`，默认使用 `credentials: 'include'`。当 API 需要 Agent Chrome 登录态时，先 `navigate` 再使用这个步骤。
 
-### 10.3 `navigate`
+### 11.3 `navigate`
 
 ```js
 { navigate: 'https://example.com' }
@@ -584,7 +818,7 @@ tap <site> <command> --flag false
 
 打开页面，等待 `Page.loadEventFired` 和 SPA 初始化延迟。需要 Chrome 开启远程调试。
 
-### 10.4 `evaluate`
+### 11.4 `evaluate`
 
 ```js
 { evaluate: 'document.title' }
@@ -603,7 +837,7 @@ tap <site> <command> --flag false
 { evaluate: `document.body.innerText.includes('\${{ args.keyword }}')` }
 ```
 
-### 10.5 `intercept`
+### 11.5 `intercept`
 
 ```js
 {
@@ -627,7 +861,7 @@ Trigger 支持：
 | `click:` | `click:.load-more-btn` |
 | `scroll` | `scroll`、`scroll:down`、`scroll:up` |
 
-### 10.6 `select`
+### 11.6 `select`
 
 ```js
 { select: 'data.list' }
@@ -650,7 +884,7 @@ Trigger 支持：
 
 路径不存在时返回 `null`。使用 `{ from, path, as }` 可以从命名状态读取数据，并把选出的结果保存成另一个名字。`from` 可以是状态名，也可以是 `projects.items` 这样的状态路径。
 
-### 10.7 `map`
+### 11.7 `map`
 
 ```js
 {
@@ -674,7 +908,7 @@ Trigger 支持：
 }
 ```
 
-### 10.8 `mapOne`
+### 11.8 `mapOne`
 
 ```js
 {
@@ -687,7 +921,7 @@ Trigger 支持：
 
 将当前值转换成一个对象。它主要用于 `foreach` 内部：`item` 是原始遍历项，`data` 是当前嵌套步骤的结果。
 
-### 10.9 `foreach`
+### 11.9 `foreach`
 
 ```js
 {
@@ -711,7 +945,7 @@ Trigger 支持：
 
 从当前 `data` 或命名状态路径读取数组，对每个元素执行嵌套步骤，并把每个元素的最终结果收集成数组。默认并发为 4；`concurrency` 至少为 1。嵌套步骤可以读取 `state`，但嵌套步骤内部的局部 `as` 不会写回共享状态；需要用 `foreach.as` 保存收集后的结果。
 
-### 10.10 `filter`、`sort`、`limit`
+### 11.10 `filter`、`sort`、`limit`
 
 ```js
 { filter: 'item.play > 10000' }
@@ -726,7 +960,7 @@ Trigger 支持：
 
 `sort` 使用字段值的字符串比较，并启用 numeric 排序。
 
-### 10.11 模板表达式
+### 11.11 模板表达式
 
 模板使用 `${{ expression }}` 语法。可用上下文变量：
 
@@ -741,7 +975,7 @@ Trigger 支持：
 
 ---
 
-## 11. 常见适配器模式
+## 12. 常见适配器模式
 
 ### 模式 A：公开 JSON API
 
@@ -875,11 +1109,11 @@ pipeline: [
 
 ---
 
-## 12. 用 AI 辅助构建适配器
+## 13. 用 AI 辅助构建适配器
 
 TAP 附带一个 AI assistant skill：`tap-adapter-author`。它会引导你从站点侦察走到可运行的 `tap <site> <command>` 输出。
 
-### 12.1 安装 Skill
+### 13.1 安装 Skill
 
 ```bash
 tap skill install claude-code
@@ -898,7 +1132,7 @@ tap skill install codex --target ~/.codex/skills
 tap skill install claude-code --force
 ```
 
-### 12.2 浏览器登录准备
+### 13.2 浏览器登录准备
 
 需要登录态的浏览器适配器，在使用 skill 前先启动 Agent Chrome 并登录目标站点：
 
@@ -918,7 +1152,7 @@ tap browser start --foreground
 
 Skill 复用已登录的 Agent Chrome profile，不会自动处理认证。
 
-### 12.3 工作流
+### 13.3 工作流
 
 调用 skill 后描述目标：
 
@@ -958,7 +1192,7 @@ tap <site> <command> --limit 5
 
 ---
 
-## 13. 项目结构
+## 14. 项目结构
 
 ```text
 tap/
@@ -995,7 +1229,7 @@ tap/
 
 ---
 
-## 14. 依赖与运行时
+## 15. 依赖与运行时
 
 | 包 | 用途 |
 |----|------|
