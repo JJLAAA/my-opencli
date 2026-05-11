@@ -80,6 +80,34 @@ Contracts live in focused files:
 - Npm wrapper, platform packages, and publish flow: [Npm Distribution](./npm-distribution.md).
 - Adapter pack management: [Adapter Pack Management](../adapters/adapter-pack-management.md).
 
+### Bundled Skill Source Ownership
+
+When a task changes a TAP skill, update the TAP-owned bundled skill source in this repository, not a skill installed into the local assistant environment.
+
+Correct source files:
+
+```text
+skills/<skill-name>/SKILL.md
+skills/<skill-name>/references/**
+src/bundled-skills.js
+```
+
+Installed assistant skill directories such as `~/.claude/skills`, `~/.codex/skills`, `$CODEX_HOME/skills`, or other machine-local provider paths are generated targets for `tap skill install ...`. They are not the source of truth for TAP changes and must not be edited to satisfy repository tasks.
+
+If a bundled skill adds, renames, or removes files, keep `src/bundled-skills.js` synchronized so the standalone binary and npm package can install the same content as the repo source.
+
+Wrong:
+
+```text
+~/.codex/skills/tap-adapter-author/SKILL.md
+```
+
+Correct:
+
+```text
+skills/tap-adapter-author/SKILL.md
+```
+
 ---
 
 ## Naming Conventions
