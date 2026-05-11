@@ -1000,3 +1000,40 @@ Updated the bundled tap-adapter-author skill to declare runtime dependencies, re
 ### Next Steps
 
 - None - task complete
+
+
+## Session 26: Tap adapter author schema gate
+
+**Date**: 2026-05-11
+**Task**: Tap adapter author schema gate
+**Branch**: `main`
+
+### Summary
+
+Added a mandatory schema confirmation gate to the bundled tap-adapter-author skill, documented npm publish handoff expectations, prepared the 0.1.5 version bump, expanded README positioning around deterministic Agent data access, and recorded the task context.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9805c15` | (see git log) |
+| `7f12f73` | (see git log) |
+| `04ef4ff` | (see git log) |
+| `abab852` | (see git log) |
+| `3f9b887` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
