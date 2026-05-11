@@ -1037,3 +1037,37 @@ Added a mandatory schema confirmation gate to the bundled tap-adapter-author ski
 ### Next Steps
 
 - None - task complete
+
+
+## Session 27: Restore English default README
+
+**Date**: 2026-05-12
+**Task**: Restore English default README
+**Branch**: `main`
+
+### Summary
+
+Restored README.md as the English default documentation, kept README.zh.md as the Chinese version, and recorded the Trellis task context.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `20c38a7` | (see git log) |
+| `7485896` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

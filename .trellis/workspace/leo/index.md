@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 26
-- **Last Active**: 2026-05-11
+- **Total Sessions**: 27
+- **Last Active**: 2026-05-12
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1039 | Active |
+| `journal-1.md` | ~1073 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 27 | 2026-05-12 | Restore English default README | `20c38a7`, `7485896` | `main` |
 | 26 | 2026-05-11 | Tap adapter author schema gate | `9805c15`, `7f12f73`, `04ef4ff`, `abab852`, `3f9b887` | `main` |
 | 25 | 2026-05-10 | Update tap adapter author skill dependencies | `7004699` | `main` |
 | 24 | 2026-05-10 | Bump npm version for browser restart release | `cb1e46e`, `f74d508`, `1fbff5b` | `main` |
