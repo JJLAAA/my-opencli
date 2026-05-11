@@ -43,10 +43,13 @@ START
 设计 args + output.fields schema
   │
   ▼
+向用户展示 schema 确认表并获得明确确认
+  │
+  ▼
 组装 pipeline（→ references/patterns.md 模板）
   │
   ▼
-向用户确认 schema 后安装到 ~/.tap/adapters/<site>/<command>.js
+安装到 ~/.tap/adapters/<site>/<command>.js
   │
   ▼
 运行 tap <site> <command> 验证
@@ -119,7 +122,22 @@ DONE
        [ ] examples（可选）：写 1-3 个常用调用示例，会在 tap help <site> <command> 中展示
               格式：[{ description?: '说明', args: { limit: 5 } }, ...]
               建议写：默认调用、指定 limit、组合 --fields 的典型用法
-       ✋ 向用户汇报：展示 description / args / output.fields / columns / pipeline 草稿，等待最终确认后再写文件
+       ✋ 向用户汇报：展示 description / args / output.fields / columns / pipeline 草稿，进入 Schema 确认硬门禁
+
+[ ] 5.5 Schema 确认硬门禁
+       ⛔ 未通过本门禁前，不得创建、安装或写入任何 adapter 文件：
+           [ ] 不得执行 mkdir -p ~/.tap/adapters/<site>/
+           [ ] 不得使用 Write/Edit 创建或修改 ~/.tap/adapters/<site>/<command>.js
+           [ ] 不得把 adapter 文件写到项目目录或任何临时位置再声称已经创建完成
+       [ ] 必须向用户展示完整 adapter schema 确认表，至少包含：
+           [ ] adapter description / site / command / uncertainty
+           [ ] args：name / default / description / uncertainty
+           [ ] output.fields：field / raw path / type / description / sample / format / unit / nullable / uncertainty
+           [ ] columns 顺序
+           [ ] 已知不确定点和需要用户裁决的字段含义
+       [ ] 必须等待用户明确确认后才能继续。接受的确认必须是肯定表达，例如“确认”、“可以”、“ok”、“looks good”。
+       [ ] 如果用户修改字段、类型、描述、参数或 columns，必须更新 schema 确认表并再次等待明确确认。
+       [ ] 如果用户没有确认、跳过确认、只要求“先写出来”、或仍有字段含义不确定，必须停在本步骤继续澄清；不得进入安装步骤。
 
 [ ] 6. 组装 pipeline
        [ ] 按 Pattern 选对应模板（references/patterns.md）
@@ -130,6 +148,7 @@ DONE
        [ ] 末尾加 limit: '${{ args.limit }}'
 
 [ ] 7. 安装适配器
+       [ ] 只有 Step 5.5 已获得用户明确确认后，才允许进入本步骤
        [ ] mkdir -p ~/.tap/adapters/<site>/
        [ ] 写入 ~/.tap/adapters/<site>/<command>.js
 
@@ -219,18 +238,27 @@ DONE
 
 ## Schema 确认规则
 
-写入适配器前必须向用户展示 adapter schema 确认表，并包含顶层 description：
+写入适配器前必须通过 **Schema 确认硬门禁**：向用户展示 adapter schema 确认表，并获得明确肯定确认。没有用户确认时，禁止创建目录、写入 adapter 文件或宣称 adapter 已创建完成。
 
 | adapter description | site | command | uncertainty |
 |---------------------|------|---------|-------------|
 | Fetch recent articles from example.com. | example | articles | low |
 
-| output field | raw path | type | description | sample | uncertainty |
-|--------------|----------|------|-------------|--------|-------------|
-| title | data.items[].title | string | Item title. | "..." | low |
+| arg | default | description | uncertainty |
+|-----|---------|-------------|-------------|
+| limit | 20 | Maximum number of items to return. | low |
+
+| output field | raw path | type | description | sample | format | unit | nullable | uncertainty |
+|--------------|----------|------|-------------|--------|--------|------|----------|-------------|
+| title | data.items[].title | string | Item title. | "..." |  |  | false | low |
+
+| columns |
+|---------|
+| title |
 
 确认要求：
 
+- 必须等待用户明确确认后才能创建或写入 adapter；用户修改 schema 后必须重新确认
 - 顶层 `description` 必须说明 adapter 的业务用途，不只复述命令名
 - 字段名使用 camelCase，表达业务含义，不照搬含糊的上游字段名
 - `type` 使用 `string` / `integer` / `number` / `boolean` / `array` / `object`

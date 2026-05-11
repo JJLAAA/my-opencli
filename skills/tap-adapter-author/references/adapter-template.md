@@ -141,6 +141,8 @@ export default {
 
 ## 安装命令
 
+执行任何安装命令前，必须先通过 `SKILL.md` 中的 Schema 确认硬门禁：用户已经明确确认 adapter description、args、output.fields、columns 和不确定点。未确认时不得创建目录或写入 adapter 文件。
+
 ```bash
 # 创建目录
 mkdir -p ~/.tap/adapters/<site>/
