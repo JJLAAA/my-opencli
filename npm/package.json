@@ -1,6 +1,6 @@
 {
   "name": "@leolee812/tap",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Lightweight CLI for executing declarative data pipelines that fetch and transform data from web sources",
   "keywords": [
     "tap",
@@ -25,9 +25,9 @@
     "postinstall": "node install.js"
   },
   "optionalDependencies": {
-    "@leolee812/tap-darwin-arm64": "0.1.4",
-    "@leolee812/tap-darwin-x64": "0.1.4",
-    "@leolee812/tap-linux-x64": "0.1.4"
+    "@leolee812/tap-darwin-arm64": "0.1.5",
+    "@leolee812/tap-darwin-x64": "0.1.5",
+    "@leolee812/tap-linux-x64": "0.1.5"
   },
   "files": [
     "run.js",
