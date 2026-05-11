@@ -1,514 +1,387 @@
 # TAP
 
-TAP 是一个面向 Agent 的轻量级 CLI 数据访问层。它把业务系统、网页后台、无 API 平台里的数据访问过程，封装成稳定、可验证、机器可读的命令：
+A lightweight CLI tool for executing declarative data pipelines that fetch and transform data from web sources.
 
-```bash
+> TAP is a lightweight version of [opencli](https://github.com/jackwener/opencli). The core difference is intentional browser isolation: TAP treats Chrome as a dedicated agent runtime instead of controlling the user's everyday browser through a daemon and extension.
+
+---
+
+*[Chinese documentation](README.zh.md)*
+
+```
 tap <site> <command> [--key value]
 ```
 
-你可以把 TAP 理解成一层“给 Agent 用的只读业务数据接口”。人负责确认数据源、字段和访问方式；TAP 负责把这些约定固化为 CLI；Agent 在工作流里通过 `tap schema` 发现契约，再通过 `tap <site> <command>` 获取 JSON 数据。
+## Core Value
 
-TAP 是 [opencli](https://github.com/jackwener/opencli) 的轻量版本。核心区别是浏览器隔离：TAP 将 Chrome 视为专供 Agent 使用的操作平台，而不是通过 daemon + extension 控制用户日常使用的 Chrome。
+TAP's value is turning data and operations that already exist in business systems, but are not suitable for agents to consume directly, into stable, verifiable, and structured CLI capabilities.
 
-AI Agent 落地的核心工程难点之一，是把模型的不确定性限制在合适的位置。模型擅长理解人的意图、拆解任务、选择下一步；但在在线数据浏览场景里，如果让模型每次临场处理页面结构、HTTP 请求、登录态、分页和字段抽取，执行路径就会变得不稳定，也会消耗大量 token。
+The goal is to let agents work with real business context for querying, diagnosis, summarization, troubleshooting, and decision support without forcing them to understand complex UIs or write one-off scrapers.
 
-TAP 的设计目标，是把“意图表达”和“数据执行”分离开：Agent 负责说明想要什么数据，TAP adapter 负责用声明式 pipeline 稳定地执行请求、解析和输出。这样既能保留 Agent 的意图理解能力，又能把外部数据访问收敛为可验证、可复用、低 token 消耗的 CLI 契约。
+## Design Decision: Data Access Layer, Not a Trigger Skill
 
-从这个角度看，TAP 也是一种构建 Agent harness 的方式：把已有 HTTP 服务、网页接口和浏览器态数据源，封装成 Agent 友好的命令行工具，让 Agent 调用确定性的接口，而不是每次重新浏览和猜测。
+TAP is intended to be embedded into other agent workflows as a structured data access layer. It does not include a heuristic "use TAP" skill that tries to infer every possible data-fetching intent, because TAP is never meant to be spontaneously discovered by an agent.
 
-长期方向见：[TAP 长期规划：面向 Agent 的只读业务数据接入层](docs/readonly-data-access-roadmap.md)。
+The intended flow is two-phase and human-initiated:
 
----
+1. **A human expresses intent using `tap-adapter-author`** — describing what data source to access. The skill guides the full loop: site reconnaissance, endpoint validation, schema confirmation, pipeline assembly, and installation of the adapter under `~/.tap/adapters/<site>/<command>.js`.
+2. **The adapter is then declared into a specific workflow** — from that point on, an agent operates within that workflow and calls `tap` as a structured data source. The agent uses `tap schema` to discover the contract and calls the command; it does not need to reason about whether TAP is the right tool.
 
-## 1. 为什么需要 TAP
+This means TAP's agent-friendly design (schema introspection, structured errors, exit codes, JSON output) serves agents that already know they are inside a TAP-enabled workflow — not agents discovering TAP autonomously. The `tap-adapter-author` skill is the human-side entry point; TAP itself is the agent-side execution interface. The two have separate roles and do not overlap.
 
-很多团队的真实业务数据已经存在于内部后台、SaaS、网页控制台或第三方平台中，但这些系统通常不适合 Agent 直接消费：
+## When Not to Use TAP
 
-- UI 复杂，Agent 每次临时点页面不稳定。
-- 登录态、Cookie、分页、XHR、字段映射容易散落在一次性脚本里。
-- 没有明确 schema，Agent 不知道字段含义、类型和可选参数。
-- 错误不可机器判断，自动化流程无法区分“参数错了”“浏览器没开”“上游失败”“适配器坏了”。
+TAP is not a general-purpose web scraper or research tool. The right question to ask is: **is this a known data source you will access repeatedly, or a one-off information retrieval task?**
 
-TAP 解决的是这个重复性问题：把一个已知数据源的访问路径沉淀成命令，把字段和参数沉淀成契约，把输出和错误沉淀成结构化 JSON。
+| Scenario | Use TAP? | Better alternative |
+|----------|----------|--------------------|
+| Pull structured data from an internal dashboard every day | Yes | — |
+| Query a business system that has no API | Yes | — |
+| Deep research across arbitrary web sources | No | LLM native web browse |
+| Summarize or analyze an article | No | LLM native web browse |
+| One-off data lookup with no fixed schema | No | LLM native web browse |
 
-适合 TAP 的场景：
+The cost of TAP is upfront: a human authors an adapter, encodes the data contract, and installs it. That investment only pays off when the same access pattern repeats. If the data source is dynamic, the schema is unknown, or you only need to fetch something once, use your agent's native web capabilities instead.
 
-| 场景 | 用 TAP？ | 原因 |
-|------|---------|------|
-| 每天从内部后台拉取结构化数据 | 是 | 固定数据源、固定 schema、反复访问 |
-| 查询没有 API 的业务系统 | 是 | 可用浏览器登录态、XHR 或 DOM 提取补齐 |
-| 给 Agent 工作流提供业务上下文 | 是 | 可通过 `tap schema` 和 JSON 输出稳定集成 |
-| 跨任意网站做 deep research | 否 | 更适合 LLM 原生 web browse |
-| 解读或总结某篇文章 | 否 | 更适合 LLM 原生 web browse |
-| 一次性数据查询且 schema 不固定 | 否 | TAP 的适配器成本不值得 |
+## How It Works
 
-TAP 的成本在前期：人类需要编写适配器、约定数据契约、完成安装。这个投入只有在同样的访问模式会反复出现时才值得。
+TAP separates **what to fetch** from **how to fetch it**:
 
----
+- **Adapters** (`~/.tap/adapters/<site>/<command>.js`) declare the pipeline — a sequence of steps describing where to get data and how to shape it.
+- **Core engine** executes those steps, handles browser sessions, and formats output.
 
-## 2. TAP 的核心思想
+### Execution Flow
 
-### 2.1 TAP 是数据访问层，不是触发型 Skill
-
-TAP 不提供一个启发式的“使用 TAP”skill，让 Agent 自己猜什么时候该调用 TAP。它的使用流程是两阶段、由人类发起的：
-
-1. **人类使用 `tap-adapter-author` 表达接入意图**  
-   描述要访问的数据源。Skill 引导完成站点侦察、端点验证、schema 确认、pipeline 组装，并把适配器安装到 `~/.tap/adapters/<site>/<command>.js`。
-
-2. **把适配器声明进具体工作流**  
-   从这一步开始，Agent 已经处于一个 TAP-enabled workflow 中。它通过 `tap schema` 发现命令契约，然后调用 `tap <site> <command>`，不需要再判断 TAP 是否是合适工具。
-
-因此，`tap-adapter-author` 是人类侧入口；`tap` CLI 是 Agent 侧执行接口。二者职责分离，不重叠。
-
-### 2.2 TAP 分离“抓什么”和“怎么抓”
-
-TAP 的核心设计是把数据管道声明在适配器里，把执行能力放在核心引擎里：
-
-- **适配器**：位于 `~/.tap/adapters/<site>/<command>.js`，声明参数、输出字段和 pipeline。
-- **核心引擎**：加载适配器，校验参数和输出契约，执行 pipeline，管理浏览器会话，格式化 JSON 输出。
-
-执行链路如下：
-
-```text
-CLI 参数
-  └─ 从适配器目录加载 <site>/<command>.js
-       └─ 校验 args、output.fields、--format、--fields
-            └─ 判断 pipeline 是否需要浏览器
-                 └─ executePipeline(steps, args, cdpSession?)
-                      └─ printOutput(data, "json", { adapter, site, command, args, fields })
+```
+CLI Args
+  └─ Load Adapter from ~/.tap/adapters/<site>/<command>.js
+       └─ executePipeline(steps, args, cdpSession?)
+            └─ printOutput(data, format, { adapter, site, command, args })
 ```
 
-Pipeline 按顺序执行。每个步骤接收上一步输出作为 `data`，产生新的 `data`。步骤也可以通过 `as` 把中间结果保存到 `state`，后续用 `from` 读取，这样多请求编排不用写成一大段脚本。
-
-### 2.3 TAP 对 Agent 友好的契约
-
-TAP 面向 Agent 的关键不是“能抓到数据”，而是“能稳定集成”：
-
-- `tap schema` 输出机器可读命令契约。
-- 数据命令输出包含 `meta`、`schema`、`items` 的 JSON envelope。
-- 参数类型、默认值、必填、枚举和数值范围在运行前校验。
-- 错误统一以 JSON 写到 stderr，并带有错误码、建议、是否可重试。
-- 退出码区分使用错误、配置错误、浏览器错误、上游错误和适配器契约错误。
+The pipeline runs steps sequentially. Each step receives the output of the previous step as `data` and produces a new `data` for the next. Steps can also save results with `as` and read them later with `from`, which keeps multi-request adapters readable without hiding orchestration inside one large script.
 
 ---
 
-## 3. 浏览器隔离模型
+## TAP vs OpenCLI
 
-OpenCLI 优先复用用户正在使用的 Chrome，通过本地 daemon 和 Browser Bridge extension 控制日常浏览器，从而复用日常 profile 里的 cookie 和标签页。
+OpenCLI optimizes for low-friction reuse of the user's existing Chrome session. It uses a local daemon plus a Browser Bridge extension to control the already-running browser, so browser-backed commands can reuse the cookies and tabs from the user's daily Chrome profile.
 
-TAP 刻意采用另一种模型：Chrome 是独立的 **Agent 操作平台**。浏览器适配器连接到显式启动的 remote-debugging Chrome，通常使用专用 profile：
+TAP deliberately uses a different model: Chrome is an **agent operating platform**. Browser-backed adapters connect to a Chrome instance that the user explicitly starts with remote debugging, usually with a dedicated profile such as `~/.chrome-automation-profile`. You log into target sites inside that profile once, then TAP reuses that agent profile for future runs.
 
-```text
-~/.chrome-automation-profile
-```
+This keeps human browsing and agent automation separate:
 
-你只需要在这个 Agent profile 里登录目标网站一次，之后 TAP 会复用这个 profile 的 cookie、localStorage 和登录态。
-
-这种模型的收益：
-
-- Agent 的误操作限制在 automation profile 内，不影响人的日常浏览器。
-- Cookie、localStorage、扩展和标签页状态更可控，更容易复现问题。
-- 不需要浏览器扩展，也不需要常驻 daemon。
-- 代价是首次需要显式初始化：启动 Agent Chrome，并在其中完成登录。
+- Agent mistakes are contained to the automation profile, not the user's daily browser.
+- Cookies, localStorage, extensions, and tabs are reproducible and easier to debug.
+- No browser extension or daemon is required.
+- The trade-off is an explicit first-time initialization step: start the agent Chrome and log in there.
 
 ---
 
-## 4. 安装与初始化
+## Installation
 
-### 4.1 npm 安装（推荐）
+### npm (recommended)
 
 ```bash
 npm install -g @leolee812/tap
+```
+
+This installs a small wrapper package that automatically pulls in the prebuilt binary for your OS and CPU. No Bun or build step required.
+
+Then initialize user-owned TAP files:
+
+```bash
 tap setup
 ```
 
-npm 包是一个轻量 wrapper，会自动拉取当前 OS/CPU 对应的预编译二进制文件。使用者不需要安装 Bun，也不需要本地构建。
+### From source (for contributors)
 
-`tap setup` 会创建：
-
-- `~/.tap/`
-- `~/.tap/adapters/`
-- `~/.tap/logs/`
-- `~/.tap/config.json`
-
-已有配置默认保留；只有传入 `--force` 才会覆盖：
-
-```bash
-tap setup --force
-```
-
-### 4.2 源码构建（贡献者）
-
-前置依赖：[Bun](https://bun.sh)。
+**Prerequisites:** [Bun](https://bun.sh) runtime.
 
 ```bash
 git clone <repo>
 cd tap
 bun install
-bun run build
+bun run build        # produces ./tap binary
 mv tap /usr/local/bin/tap
 tap setup
 ```
 
-源码开发时也可以直接运行：
+---
 
-```bash
-bun run bin/cli.js <site> <command> --limit 3
-```
+**Installation scope:** installing the TAP binary installs only the CLI runtime: command parsing, pipeline execution, schema output, browser control, and local config. TAP does not bundle site-specific adapters or install assistant instructions automatically.
 
-### 4.3 安装范围
+Install an adapter pack only when you want ready-made commands for a specific data source. Adapter packs add files under `~/.tap/adapters/`, which is what turns a generic command like `tap <site> <command>` into a concrete data pipeline.
 
-安装 TAP 二进制只安装 CLI runtime：命令解析、pipeline 执行、schema 输出、浏览器控制和本地配置。
-
-TAP 不会默认安装具体站点适配器，也不会自动把 assistant 指令安装进 AI 工具。
-
-如果你想直接获得某个数据源的现成命令，安装适配器包：
+Install the assistant skill only when you want your AI coding assistant to help author new adapters. The skill is not needed to run existing adapters; it teaches the assistant the TAP adapter workflow and writes the resulting adapter into your local adapter directory.
 
 ```bash
 tap adapter install github:<owner>/<repo>
-tap adapter install url:<https-url-to-zip-or-tarball>
-tap adapter install git:<git-url>
-tap adapter install git:<git-url> --force
-```
-
-如果你想让 AI coding assistant 帮你编写新适配器，安装 assistant skill：
-
-```bash
 tap skill install codex
-tap skill install claude-code
 ```
 
-运行已有适配器不需要 skill。Skill 的作用是教 assistant 按 TAP 工作流编写适配器，并把结果写入本地适配器目录。
+Use `tap skill install claude-code` instead if you use Claude Code.
+
+`tap setup` creates `~/.tap/`, `~/.tap/adapters/`, `~/.tap/logs/`, and a default `~/.tap/config.json`. Existing config is kept unless you pass `--force`.
 
 ---
 
-## 5. 快速使用
-
-### 5.1 查看版本、帮助和本地状态
+## Usage
 
 ```bash
-# 查看版本
+# List available sites and commands
+tap help
+
+# Print the installed version
 tap version
 tap --version
 tap -v
 
-# 查看全局帮助
-tap help
-
-# 初始化或刷新本地 TAP 文件
+# Initialize or refresh local TAP files
 tap setup
 tap setup --force
 
-# 诊断本地环境
+# Diagnose local setup
 tap doctor
-```
 
-### 5.2 发现命令
+# Discover machine-readable command contracts
+tap schema
+tap schema <site>
+tap schema <site> <command>
+tap schema browser start
+tap schema browser restart
 
-```bash
-# 列出所有站点和命令
-tap help
+# Manage agent Chrome
+tap browser start
+tap browser status
+tap browser stop
+tap browser restart
 
-# 安装适配器后查看某个站点的命令
+# Install, list, or remove adapter packs
+tap adapter install github:<owner>/<repo>
+tap adapter install url:<https-url-to-zip-or-tarball>
+tap adapter install git:<git-url>
+tap adapter install git:<git-url> --force
+tap adapter list
+tap adapter remove <pack-name>
+
+# List commands for a site after installing an adapter
 tap help <site>
 
-# 查看某个命令的参数说明
+# Show command options
 tap help <site> <command>
+# or:
 tap <site> <command> --help
-```
 
-### 5.3 执行适配器命令
-
-```bash
+# Run an adapter command
 tap <site> <command>
 tap <site> <command> --limit 10
-tap <site> <command> --format json
-tap <site> <command> --fields title,url,score
 ```
 
-数据命令只支持 JSON 输出。`--format json` 可显式传入，但默认就是 JSON。
+### Output Format
 
-### 5.4 给 Agent 发现契约
+| Flag | Description |
+|------|-------------|
+| _(default)_ / `--format json` | JSON envelope with `meta`, `schema`, and `items` for data commands |
+| `--fields <f1,f2,...>` | Return only the named fields from the adapter's declared schema |
 
-Agent 不应该解析 help 文本，而应该使用 `tap schema`：
+JSON is the only supported output format for data commands, and management commands also print JSON. `--format json` is accepted for explicitness, but it is optional for those commands. Help commands intentionally print human-readable text.
+
+`--fields` accepts a comma-separated list of field names declared in the adapter's `output.fields`. Unknown field names produce a warning in `meta.warnings` but do not fail. The `schema.items.properties` in the response reflects the effective set of returned fields. Adapter contract diagnostics (missing/dropped field warnings) are always evaluated against the full declared schema, regardless of `--fields`.
+
+### Agent Contract Discovery
+
+Agents should discover commands and arguments from `tap schema` instead of scraping help text.
 
 ```bash
-# 列出适配器命令和管理命令
+# List adapter and management commands
 tap schema
 
-# 列出某个站点的所有命令
+# List commands for a site
 tap schema <site>
 
-# 查看某个适配器命令
+# Inspect one adapter command
 tap schema <site> <command>
 
-# 查看管理命令
-tap schema version
-tap schema doctor
-tap schema setup
-tap schema browser status
+# Inspect one management command
 tap schema browser start
-tap schema browser stop
 tap schema browser restart
-tap schema adapter install
-tap schema adapter list
-tap schema adapter remove
-tap schema skill install
+tap schema doctor
 ```
 
-`tap schema` 返回 JSON，包含 `meta.schemaVersion` 和 `commands`。每个命令都带有 `schemaCommand`，指向命令级 schema。
+`tap schema` returns JSON with `meta.schemaVersion` and a `commands` array. Each command includes a `schemaCommand` field that points to the command-specific schema. Command schemas include argument flags, types, defaults, required markers, enum/range constraints, and output schema when applicable.
 
-`tap schema <site>` 返回站点级 schema，`meta.kind` 为 `"site"`。如果某个适配器无法加载，对应命令条目会包含 `loadError`。
+`tap schema <site>` returns a site-level schema with `meta.kind: "site"`, listing all commands for that site. Each command entry includes `kind`, `site`, `command`, `name`, `description`, and `schemaCommand`. If an adapter cannot be loaded, its entry includes a `loadError` object instead of a description. Unknown sites produce a structured usage error with `code: "unknown_site"`.
 
-未知站点会返回结构化使用错误：
+For management command schemas, pass only the command words shown by `tap schema` (for example `tap schema browser start`); adapter flags are not part of schema lookup.
+
+### Exit Codes
+
+| Code | Name | Meaning | Agent Response |
+|------|------|---------|----------------|
+| 0 | success | Command completed | Parse stdout |
+| 1 | general_error | Unexpected failure | Inspect error; usually stop |
+| 2 | usage_error | Bad invocation, unknown option, missing required arg, unsupported format | Fix command |
+| 3 | config_error | Missing or invalid TAP setup | Run `tap setup` |
+| 4 | browser_error | Chrome/CDP unavailable | Run `tap browser status` / `tap browser start` |
+| 5 | upstream_error | Network or remote API failure | Retry if `retryable: true` |
+| 6 | adapter_contract_error / adapter_load_error | Adapter output schema invalid, or adapter file cannot be loaded | Fix adapter `output.fields`, JavaScript syntax, or module export |
+
+Adapter management commands use exit code `2` for usage errors (unknown source format, missing arguments) and exit code `5` for download/clone failures (retryable) and exit code `6` for pack contract errors (invalid `tap-adapter.json`, missing `adapters/` directory) and file conflicts.
+
+### Structured Errors
+
+CLI failures produce a JSON error on stderr:
 
 ```json
 {
   "error": {
-    "code": "unknown_site",
-    "message": "Unknown site: example",
-    "suggestion": "Run: tap schema",
+    "code": "missing_required_arg",
+    "message": "Missing required argument: --subreddit",
+    "suggestion": "Run: tap reddit hot --help",
     "retryable": false,
-    "details": { "site": "example" }
+    "details": {}
   }
 }
 ```
 
----
+Adapter load failures include the adapter path and, when TAP can detect the issue, line-level diagnostics in `error.details.diagnostics`.
 
-## 6. 当前已支持站点示例
-
-下面示例基于当前已安装适配器。你的本地可用站点以 `tap schema` 或 `tap help` 输出为准。
-
-### 6.1 OpenAI 文章
-
-获取最近 7 天 Engineering 分类文章：
+### JSON Management Commands
 
 ```bash
-tap openai articles --limit 5
-```
-
-获取 Research 和 Engineering 两个分类，并限制返回字段：
-
-```bash
-tap openai articles \
-  --category "Research,Engineering" \
-  --days 14 \
-  --limit 10 \
-  --fields title,publishDate,category,url
-```
-
-按日期范围获取：
-
-```bash
-tap openai articles \
-  --category "Research,Engineering" \
-  --startDate 2026-05-01 \
-  --endDate 2026-05-11 \
-  --limit 20
-```
-
-抓取单篇 OpenAI 文章正文：
-
-```bash
-tap openai article \
-  --url https://openai.com/index/mrc-supercomputer-networking/ \
-  --fields title,date,category,url,content
-```
-
-| 命令 | 常用字段 |
-|------|----------|
-| `tap openai articles` | `title`, `publishDate`, `url`, `summary`, `category` |
-| `tap openai article` | `title`, `date`, `category`, `url`, `content` |
-
-### 6.2 Anthropic Engineering 文章
-
-获取 Anthropic Engineering 文章列表：
-
-```bash
-tap anthropic articles --limit 5
-```
-
-只返回标题、摘要、日期和链接：
-
-```bash
-tap anthropic articles \
-  --limit 10 \
-  --fields title,summary,date,url
-```
-
-抓取单篇 Anthropic 文章正文：
-
-```bash
-tap anthropic article \
-  --url https://www.anthropic.com/engineering/managed-agents \
-  --fields title,date,url,content
-```
-
-| 命令 | 常用字段 |
-|------|----------|
-| `tap anthropic articles` | `rank`, `title`, `summary`, `date`, `url` |
-| `tap anthropic article` | `title`, `date`, `content`, `url` |
-
-### 6.3 Claude Blog
-
-获取最近 7 天 Claude Blog 文章：
-
-```bash
-tap claude articles --limit 5 --days 7
-```
-
-获取最近 30 天文章并只返回摘要字段：
-
-```bash
-tap claude articles \
-  --days 30 \
-  --limit 20 \
-  --fields title,publishedDate,category,summary,url
-```
-
-抓取单篇 Claude Blog 正文：
-
-```bash
-tap claude post \
-  --url https://claude.com/blog/new-in-claude-managed-agents \
-  --fields title,publishedDate,category,url,content
-```
-
-| 命令 | 常用字段 |
-|------|----------|
-| `tap claude articles` | `title`, `publishedDate`, `category`, `summary`, `url` |
-| `tap claude post` | `title`, `publishedDate`, `category`, `content`, `url` |
-
-### 6.4 Simon Willison 博客
-
-获取最近 7 天文章：
-
-```bash
-tap simonwillison articles --days 7 --limit 10
-```
-
-获取最近 30 天文章，并只返回适合 Agent 摘要处理的字段：
-
-```bash
-tap simonwillison articles \
-  --days 30 \
-  --limit 20 \
-  --fields title,published,summary,url
-```
-
-抓取单篇文章或 quote post：
-
-```bash
-tap simonwillison post \
-  --url https://simonwillison.net/2026/May/9/luke-curley/ \
-  --fields title,date,type,url,content,tags
-```
-
-| 命令 | 常用字段 |
-|------|----------|
-| `tap simonwillison articles` | `title`, `url`, `published`, `summary` |
-| `tap simonwillison post` | `title`, `url`, `date`, `type`, `content`, `sourceUrl`, `tags` |
-
-### 6.5 宝玉文章
-
-获取最近中文文章：
-
-```bash
-tap baoyu articles --days 7 --limit 10
-```
-
-只返回摘要列表：
-
-```bash
-tap baoyu articles \
-  --days 30 \
-  --limit 20 \
-  --fields title,date,summary,url
-```
-
-| 命令 | 常用字段 |
-|------|----------|
-| `tap baoyu articles` | `title`, `url`, `summary`, `date` |
-
-### 6.6 Reddit
-
-Reddit 适配器使用浏览器会话。首次使用前建议启动 Agent Chrome，并在该 profile 中完成 Reddit 登录：
-
-```bash
-tap browser start --foreground
+# Diagnostics
 tap doctor
-```
+# → { "ok": true, "checks": [...], "suggestions": [] }
 
-获取某个 subreddit 的热门帖子：
+# Browser lifecycle
+tap browser status
+# → { "ok": true, "endpoint": "...", "browser": "Chrome/..." }
 
-```bash
-tap reddit hot \
-  --subreddit AgentsOfAI \
-  --limit 10 \
-  --fields rank,title,score,comments,author,url
-```
+tap browser start
+# → { "alreadyRunning": false, "endpoint": "...", "chrome": "...", "profile": "..." }
 
-抓取单个帖子正文和评论树：
+tap browser stop
+# → { "stopped": true, "endpoint": "..." }
 
-```bash
-tap reddit thread \
-  --url https://www.reddit.com/r/codex/comments/1t7r2us/claude_code_is_not_on_the_same_level_as_codex/ \
-  --commentLimit 20 \
-  --depth 5 \
-  --fields title,author,selftext,score,commentCount,url,comments
-```
+tap browser restart
+# → { "stopped": {...}, "started": {...} }
 
-| 命令 | 常用字段 |
-|------|----------|
-| `tap reddit hot` | `rank`, `title`, `score`, `comments`, `author`, `selftext`, `url` |
-| `tap reddit thread` | `postId`, `subreddit`, `title`, `author`, `selftext`, `score`, `upvoteRatio`, `commentCount`, `createdUtc`, `url`, `comments` |
+# Setup
+tap setup
+# → { "directories": [...], "config": { "path": "...", "written": true }, ... }
 
-### 6.7 X / Twitter
+# Adapter management
+tap adapter install github:example/tap-adapters
+# → { "ok": true, "action": "install", "pack": {...}, "installed": [...], "overwritten": [], "target": "..." }
 
-X 适配器使用浏览器会话。首次使用前启动 Agent Chrome，并在该 profile 中登录 X：
+tap adapter list
+# → { "packs": [...] }
 
-```bash
-tap browser start --foreground
-tap doctor
-```
-
-抓取单条 X status 或 X Article：
-
-```bash
-tap x tweet \
-  --url https://x.com/user/status/1234567890 \
-  --fields authorName,authorHandle,title,text,url,comments
-```
-
-| 命令 | 常用字段 |
-|------|----------|
-| `tap x tweet` | `tweetId`, `authorName`, `authorHandle`, `title`, `text`, `url`, `comments` |
-
-### 6.8 让 Agent 先查 schema 再调用
-
-在工作流里，不要让 Agent 记住这些示例；让它先查询契约：
-
-```bash
-tap schema openai articles
-tap schema reddit thread
-tap schema x tweet
-```
-
-典型 Agent 调用顺序：
-
-```bash
-tap schema <site> <command>
-tap <site> <command> --fields <needed-fields> ...
+tap adapter remove <pack-name>
+# → { "ok": true, "action": "remove", "pack": "...", "removed": [...] }
 ```
 
 ---
 
-## 7. 输出、错误和退出码
+## Environment Variables
 
-### 7.1 JSON 输出格式
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TAP_CDP_ENDPOINT` | `http://127.0.0.1:9222` | Chrome DevTools Protocol endpoint for browser-based adapters |
+| `TAP_ADAPTERS_DIR` | _(none)_ | Additional directory to search for adapters (takes priority over user adapters) |
+| `TAP_CHROME_PATH` | _(auto-detected)_ | Chrome executable path used by `tap browser start` and `tap browser restart` |
 
-数据命令输出 JSON envelope：
+### Adapter Search Order
+
+When `TAP_ADAPTERS_DIR` is set:
+
+1. `$TAP_ADAPTERS_DIR/<site>/<command>.js`
+2. `~/.tap/adapters/<site>/<command>.js`
+
+Without `TAP_ADAPTERS_DIR`:
+
+1. `~/.tap/adapters/<site>/<command>.js`
+
+The first match wins.
+
+---
+
+## Adapter Reference
+
+### File Structure
+
+```js
+// ~/.tap/adapters/<site>/<command>.js
+export default {
+  description: 'Short description shown in help.',
+  args: [
+    {
+      name: 'limit',
+      type: 'integer',
+      default: 20,
+      minimum: 1,
+      maximum: 100,
+      description: 'Max items to return.',
+    },
+    {
+      name: 'sort',
+      enum: ['hot', 'new'],
+      default: 'hot',
+      description: 'Sort order.',
+    },
+    {
+      name: 'keyword',
+      required: true,
+      description: 'Search term.',
+    },
+  ],
+  output: {
+    type: 'list',
+    itemName: 'item',
+    fields: {
+      rank: {
+        type: 'integer',
+        description: 'One-based rank in the returned result set.',
+      },
+      title: {
+        type: 'string',
+        description: 'Item title.',
+      },
+    },
+  },
+  pipeline: [ /* steps */ ],
+};
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `description` | No | Shown in `tap help <site> <command>` |
+| `args` | No | CLI params with defaults, descriptions, and validation metadata |
+| `examples` | No | Usage examples shown in `tap help <site> <command>`. Array of `{ description?, args }` objects |
+| `output.fields` | Yes for JSON output | Machine-readable field contract used to build the JSON schema |
+| `pipeline` | Yes to run a data command | Ordered array of steps executed by the pipeline engine |
+
+### Argument Contract
+
+Adapter args are both documentation and runtime validation. Declare enough metadata for an agent to call the command without guessing.
+
+| Arg field | Description |
+|-----------|-------------|
+| `name` | Flag name without `--` |
+| `description` | Human/agent-facing meaning of the argument |
+| `required` | When `true`, missing values fail with exit code 2 |
+| `default` | Value applied before pipeline execution |
+| `type` | `string`, `boolean`, `integer`, or `number`; inferred from `default` when omitted |
+| `enum` | Allowed values; invalid values fail before the adapter runs |
+| `minimum` / `maximum` | Numeric bounds for `integer` and `number` args |
+| `format` / `examples` | Extra schema hints surfaced by `tap schema` |
+
+For adapter execution, unknown flags, invalid types, enum mismatches, out-of-range numbers, and missing required args produce structured JSON errors on stderr with actionable suggestions.
+
+### JSON Output Contract
+
+Data commands print a JSON envelope:
 
 ```json
 {
@@ -538,330 +411,94 @@ tap <site> <command> --fields <needed-fields> ...
 }
 ```
 
-Runtime 不会从 row key 推断字段含义。适配器必须显式声明 `output.fields`，JSON 输出只包含 schema 声明过的字段。Pipeline 产出的额外字段会被丢弃。
+The runtime does not infer field meaning from row keys. JSON output requires explicit `output.fields`, and `items` only includes fields declared there. Extra fields produced by the pipeline are dropped from JSON output. This `output.fields` contract is validated before a data command runs; malformed pipeline definitions fail during execution.
 
-### 7.2 `--fields`
+### Pipeline Steps
 
-`--fields` 接受逗号分隔字段名：
+Each step is an object with a single key naming the operation.
 
-```bash
-tap <site> <command> --fields title,url
-```
+#### Step Reference
 
-行为：
+| Step | Params | Updates `data` | Browser | Notes |
+|------|--------|----------------|---------|-------|
+| `fetch` | string URL or `{ url, as? }` | Parsed JSON response | No | Host-side HTTP GET. `as` saves the response in `state`. |
+| `browserFetch` | `{ url, as?, method?, headers?, body?, credentials? }` | Parsed JSON response | Yes | Runs page-context `fetch()`. `credentials` defaults to `include`. |
+| `navigate` | URL string | No | Yes | Opens a page and waits for load + SPA settle delay. |
+| `evaluate` | JS expression string or `{ code, as? }` | Return value | Yes | Runs in page context. Object form can save the return value with `as`. |
+| `intercept` | `{ capture, trigger?, timeout?, select?, as? }` | Captured JSON response(s) | Yes | Captures matching XHR/fetch responses after a trigger. |
+| `select` | path string or `{ from?, path?, as? }` | Selected value | No | `from` reads current `data` by default, or a named state/path. |
+| `map` | `{ select?, ...fields }` | Array of mapped objects | No | Maps each array item. `select` is an inline source path from current `data`. |
+| `mapOne` | `{ ...fields }` | One mapped object | No | Maps the current value; mainly used inside `foreach`. |
+| `foreach` | `{ from?, as?, concurrency?, steps }` | Array of nested results | Depends on nested steps | Iterates an array and collects each nested pipeline result. |
+| `filter` | JS expression string | Filtered array | No | Expression gets `item`, `index`, `args`, `data`, and `state`. |
+| `sort` | field string or `{ by, order? }` | Sorted array | No | `order: 'desc'` reverses the sort. |
+| `limit` | number or template string | Sliced array | No | Usually last. |
 
-- 字段必须来自适配器的 `output.fields`。
-- 未知字段不会让命令失败，而是写入 `meta.warnings`。
-- 响应中的 `schema.items.properties` 只包含实际返回字段。
-- 适配器契约诊断始终按完整声明 schema 评估，不受 `--fields` 影响。
-- 如果没有任何有效字段匹配，会回退到完整 schema，并给出 warning。
-
-### 7.3 结构化错误
-
-CLI 失败会在 stderr 输出 JSON：
-
-```json
-{
-  "error": {
-    "code": "missing_required_arg",
-    "message": "Missing required argument: --keyword",
-    "suggestion": "Run: tap example search --help",
-    "retryable": false,
-    "details": {}
-  }
-}
-```
-
-适配器加载失败会包含适配器路径；当 TAP 能识别具体问题时，还会在 `error.details.diagnostics` 中提供行级诊断。
-
-### 7.4 退出码
-
-| 码 | 名称 | 含义 | Agent 应对 |
-|----|------|------|------------|
-| 0 | success | 命令成功 | 解析 stdout |
-| 1 | general_error | 意外错误 | 检查错误，通常应停止 |
-| 2 | usage_error | 调用错误、未知选项、缺少必需参数、不支持的格式 | 修正命令 |
-| 3 | config_error | TAP 配置缺失或无效 | 运行 `tap setup` |
-| 4 | browser_error | Chrome/CDP 不可用 | 运行 `tap browser status` 或 `tap browser start` |
-| 5 | upstream_error | 网络或远程 API 失败 | `retryable: true` 时可重试 |
-| 6 | adapter_contract_error / adapter_load_error | 适配器输出 schema 无效，或适配器文件无法加载 | 修复适配器 |
-
-适配器管理命令使用退出码 `2` 表示用法错误，退出码 `5` 表示下载或 clone 失败，退出码 `6` 表示包契约错误或文件冲突。
-
-### 7.5 管理命令 JSON 输出
-
-```bash
-tap doctor
-# => { "ok": true, "checks": [...], "suggestions": [] }
-
-tap browser status
-# => { "ok": true, "endpoint": "...", "browser": "Chrome/..." }
-
-tap browser start
-# => { "alreadyRunning": false, "endpoint": "...", "chrome": "...", "profile": "..." }
-
-tap browser stop
-# => { "stopped": true, "endpoint": "..." }
-
-tap browser restart
-# => { "stopped": {...}, "started": {...} }
-
-tap setup
-# => { "directories": [...], "config": { "path": "...", "written": true }, ... }
-
-tap adapter install github:example/tap-adapters
-# => { "ok": true, "action": "install", "pack": {...}, "installed": [...], "overwritten": [], "target": "..." }
-
-tap adapter list
-# => { "packs": [...] }
-
-tap adapter remove <pack-name>
-# => { "ok": true, "action": "remove", "pack": "...", "removed": [...] }
-```
-
-Help 命令有意输出人类可读文本，不输出 JSON。
-
----
-
-## 8. 浏览器运行时
-
-使用 `navigate`、`evaluate`、`browserFetch` 或 `intercept` 的适配器需要运行中的 Agent Chrome。推荐流程：
-
-```bash
-tap setup
-tap browser start
-tap doctor
-```
-
-浏览器命令：
-
-```bash
-tap browser status
-tap browser start
-tap browser start --foreground
-tap browser start --headless
-tap browser stop
-tap browser restart
-tap browser restart --foreground
-tap browser restart --headless
-```
-
-`tap browser start` 默认使用专用自动化 profile（`~/.chrome-automation-profile`），有头 Chrome 默认最小化启动以减少抢焦点。使用 `--foreground` 可正常打开窗口，使用 `--headless` 可隐藏浏览器。
-
-如果日常 Chrome 重启后，Agent Chrome 开始接收系统外链，先启动日常 Chrome，再运行：
-
-```bash
-tap browser restart
-```
-
-TAP 会扫描适配器 pipeline 判断是否需要浏览器。需要浏览器时，会创建一个 CDP session；支持时每次运行打开一个后台标签页，并在结束后关闭。
-
----
-
-## 9. 适配器目录与环境变量
-
-### 9.1 环境变量
-
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `TAP_CDP_ENDPOINT` | `http://127.0.0.1:9222` | 浏览器适配器使用的 Chrome DevTools Protocol 端点 |
-| `TAP_ADAPTERS_DIR` | 无 | 额外适配器搜索目录，优先于用户适配器 |
-| `TAP_CHROME_PATH` | 自动检测 | `tap browser start` 和 `tap browser restart` 使用的 Chrome 可执行文件路径 |
-
-### 9.2 适配器搜索顺序
-
-设置 `TAP_ADAPTERS_DIR` 时：
-
-1. `$TAP_ADAPTERS_DIR/<site>/<command>.js`
-2. `~/.tap/adapters/<site>/<command>.js`
-
-未设置 `TAP_ADAPTERS_DIR` 时：
-
-1. `~/.tap/adapters/<site>/<command>.js`
-
-第一个匹配的文件生效。
-
----
-
-## 10. 适配器结构
-
-适配器是一个 ESM JavaScript 文件，默认导出一个对象：
-
-```js
-// ~/.tap/adapters/<site>/<command>.js
-export default {
-  description: '在 help 中显示的简短描述。',
-  args: [
-    {
-      name: 'limit',
-      type: 'integer',
-      default: 20,
-      minimum: 1,
-      maximum: 100,
-      description: '最多返回多少条。',
-    },
-    {
-      name: 'sort',
-      enum: ['hot', 'new'],
-      default: 'hot',
-      description: '排序方式。',
-    },
-    {
-      name: 'keyword',
-      required: true,
-      description: '搜索关键词。',
-    },
-  ],
-  examples: [
-    {
-      description: '搜索最近条目',
-      args: { keyword: 'tap', limit: 5 },
-    },
-  ],
-  output: {
-    type: 'list',
-    itemName: 'item',
-    fields: {
-      rank: {
-        type: 'integer',
-        description: 'One-based rank in the returned result set.',
-      },
-      title: {
-        type: 'string',
-        description: 'Item title.',
-      },
-    },
-  },
-  pipeline: [
-    /* steps */
-  ],
-};
-```
-
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `description` | 否 | 在 `tap help <site> <command>` 和 `tap schema` 中显示 |
-| `args` | 否 | CLI 参数，支持默认值、说明和校验元数据 |
-| `examples` | 否 | 在 `tap help <site> <command>` 中显示的示例，数组项为 `{ description?, args }` |
-| `output.fields` | JSON 输出必填 | 机器可读字段契约，用于生成 JSON schema |
-| `pipeline` | 执行数据命令时需要 | Pipeline 引擎按顺序执行的步骤数组 |
-
-### 10.1 参数契约
-
-Adapter args 既是文档，也是运行时校验。应声明足够的元数据，让 Agent 不需要猜测就能正确调用命令。
-
-| 参数字段 | 说明 |
-|----------|------|
-| `name` | 不带 `--` 的 flag 名称 |
-| `description` | 面向人和 Agent 的参数含义 |
-| `required` | 为 `true` 时，缺失值会以退出码 2 失败 |
-| `default` | pipeline 执行前应用的默认值 |
-| `type` | `string`、`boolean`、`integer` 或 `number`；省略时从 `default` 推断 |
-| `enum` | 允许值；非法值会在 adapter 运行前失败 |
-| `minimum` / `maximum` | `integer` 和 `number` 参数的数值边界 |
-| `format` / `examples` | 通过 `tap schema` 暴露的额外 schema 提示 |
-
-执行适配器命令时，未知 flag、非法类型、枚举不匹配、数值越界、缺少必填参数都会在 stderr 输出结构化 JSON 错误，并给出可执行建议。
-
-Boolean 参数支持：
-
-```bash
-tap <site> <command> --flag
-tap <site> <command> --flag true
-tap <site> <command> --flag false
-```
-
----
-
-## 11. Pipeline 步骤
-
-每个步骤是一个只含单个 key 的对象，key 名就是操作类型。
-
-| 步骤 | 参数 | 是否更新 `data` | 是否需要浏览器 | 说明 |
-|------|------|----------------|----------------|------|
-| `fetch` | URL 字符串或 `{ url, as? }` | 是，解析后的 JSON 响应 | 否 | 主机侧 HTTP GET。`as` 会把响应保存到 `state`。 |
-| `browserFetch` | `{ url, as?, method?, headers?, body?, credentials? }` | 是，解析后的 JSON 响应 | 是 | 在页面上下文执行 `fetch()`。`credentials` 默认是 `include`。 |
-| `navigate` | URL 字符串 | 否 | 是 | 打开页面并等待 load + SPA 稳定延迟。 |
-| `evaluate` | JS 表达式字符串或 `{ code, as? }` | 是，返回值 | 是 | 在页面上下文执行。对象形式可以用 `as` 保存返回值。 |
-| `intercept` | `{ capture, trigger?, timeout?, select?, as? }` | 是，捕获到的 JSON 响应 | 是 | 在触发动作后捕获匹配的 XHR/fetch 响应。 |
-| `select` | 路径字符串或 `{ from?, path?, as? }` | 是，选中的值 | 否 | `from` 默认读取当前 `data`，也可读取命名状态或状态路径。 |
-| `map` | `{ select?, ...fields }` | 是，映射后的对象数组 | 否 | 映射数组元素。`select` 是从当前 `data` 内联提取源路径。 |
-| `mapOne` | `{ ...fields }` | 是，一个映射对象 | 否 | 映射当前值，主要用于 `foreach` 内部。 |
-| `foreach` | `{ from?, as?, concurrency?, steps }` | 是，嵌套结果数组 | 取决于嵌套步骤 | 遍历数组并收集每个嵌套 pipeline 的结果。 |
-| `filter` | JS 表达式字符串 | 是，过滤后的数组 | 否 | 表达式可使用 `item`、`index`、`args`、`data`、`state`。 |
-| `sort` | 字段字符串或 `{ by, order? }` | 是，排序后的数组 | 否 | `order: 'desc'` 表示倒序。 |
-| `limit` | 数字或模板字符串 | 是，截取后的数组 | 否 | 通常放在最后。 |
-
-### 11.1 `fetch`
+#### `fetch` — HTTP GET
 
 ```js
 { fetch: 'https://api.example.com/data' }
+// or with template:
 { fetch: { url: 'https://api.example.com/search?q=${{ args.keyword }}' } }
+// save the result for later steps:
 { fetch: { url: 'https://api.example.com/projects', as: 'projects' } }
 ```
 
-返回解析后的 JSON，不需要浏览器。
+Returns parsed JSON. No browser required.
 
-### 11.2 `browserFetch`
+#### `browserFetch` — HTTP GET in browser context
 
 ```js
 { browserFetch: { url: '/api/feed', as: 'feed' } }
 ```
 
-在当前浏览器页面中执行 `fetch()`，默认使用 `credentials: 'include'`。当 API 需要 Agent Chrome 登录态时，先 `navigate` 再使用这个步骤。
+Runs `fetch()` inside the current browser page, using `credentials: 'include'` by default. Use after `navigate` when an API needs the agent Chrome login state.
 
-### 11.3 `navigate`
+#### `navigate` — Open URL in browser
 
 ```js
 { navigate: 'https://example.com' }
 ```
 
-打开页面，等待 `Page.loadEventFired` 和 SPA 初始化延迟。需要 Chrome 开启远程调试。
+Waits for `Page.loadEventFired` + 800ms for SPA initialization. Requires Chrome with remote debugging.
 
-### 11.4 `evaluate`
+#### `evaluate` — Run JS in browser context
 
 ```js
-{ evaluate: 'document.title' }
-{ evaluate: { code: 'location.href', as: 'currentUrl' } }
+{ evaluate: `document.title` }
+{ evaluate: { code: `location.href`, as: 'currentUrl' } }
+// or async:
 { evaluate: `(async () => {
   const res = await fetch('/api/data');
   return res.json();
 })()` }
 ```
 
-返回值会替换为新的 `data`。运行时拥有完整页面上下文，包括 cookie 和 session。需要保存结果时使用对象形式的 `as`。
+Replaces `data` with the return value. Runs with full page context (cookies, session). Use object form when you need to save the result with `as`.
 
-在 JavaScript 模板字符串里写 TAP 模板时要转义 `$`，否则 JS 会先解析：
-
-```js
-{ evaluate: `document.body.innerText.includes('\${{ args.keyword }}')` }
-```
-
-### 11.5 `intercept`
+#### `intercept` — Capture XHR/fetch requests
 
 ```js
-{
-  intercept: {
-    capture: 'api/timeline',
-    trigger: 'navigate:https://example.com/feed',
-    timeout: 8,
-    select: 'data.items',
-  },
-}
+{ intercept: {
+  capture: 'api/timeline',       // URL substring to match
+  trigger: 'navigate:https://example.com/feed',  // what action causes the request
+  timeout: 8,                    // seconds to wait (default: 8)
+  select: 'data.items',         // selector path to sub-select from captured response
+}}
 ```
 
-通过在页面中注入代码拦截 `window.fetch` 和 `XMLHttpRequest`。如果只捕获到一个响应，`data` 是该响应；捕获到多个响应，`data` 是响应数组；没有捕获到响应时保留原 `data`。
+Patches `window.fetch` and `XMLHttpRequest` in the page to intercept matching requests.
 
-Trigger 支持：
+**Trigger prefixes:**
 
-| 前缀 | 示例 |
-|------|------|
+| Prefix | Example |
+|--------|---------|
 | `navigate:` | `navigate:https://example.com` |
 | `evaluate:` | `evaluate:document.querySelector('.load-more').click()` |
 | `click:` | `click:.load-more-btn` |
-| `scroll` | `scroll`、`scroll:down`、`scroll:up` |
+| `scroll` | `scroll` or `scroll:down` / `scroll:up` |
 
-### 11.6 `select`
+#### `select` — Extract nested values
 
 ```js
 { select: 'data.list' }
@@ -872,56 +509,52 @@ Trigger 支持：
 { select: { from: 'projects', path: 'items', as: 'items' } }
 ```
 
-支持的 selector 语法：
+Supported selector syntax:
 
-| 语法 | 说明 |
-|------|------|
-| `data.items.0.title` | 兼容旧点路径，数字片段表示数组下标 |
-| `data.items[0].title` | bracket 数组下标 |
-| `data["hot-list"]` | quoted key，适合带标点或点号的字段名 |
-| `data.items[*].title` | 从数组每个元素中投影同一个字段 |
-| `groups[*].items[*]` | 每个 wildcard 展开一层嵌套数组 |
+| Syntax | Description |
+|--------|-------------|
+| `data.items.0.title` | Legacy dot path with numeric array segments |
+| `data.items[0].title` | Bracket array index |
+| `data["hot-list"]` | Quoted key for names with punctuation or dots |
+| `data.items[*].title` | Project one field from every array item |
+| `groups[*].items[*]` | Flatten nested arrays by one level per wildcard |
 
-路径不存在时返回 `null`。使用 `{ from, path, as }` 可以从命名状态读取数据，并把选出的结果保存成另一个名字。`from` 可以是状态名，也可以是 `projects.items` 这样的状态路径。
+Missing paths return `null`.
 
-### 11.7 `map`
+Use `{ from, path, as }` to read from a named state value and save the selected result under another name. `from` can be a state name or path such as `projects.items`.
 
-```js
-{
-  map: {
-    rank: '${{ index + 1 }}',
-    title: '${{ item.title }}',
-    author: '${{ item.owner.name }}',
-    play: '${{ item.stat.view }}',
-  },
-}
-```
-
-支持内联 `select`：
+#### `map` — Transform array items
 
 ```js
-{
-  map: {
-    select: 'data.list',
-    title: '${{ item.title }}',
-  },
-}
+{ map: {
+  rank:   '${{ index + 1 }}',
+  title:  '${{ item.title }}',
+  author: '${{ item.owner.name }}',
+  play:   '${{ item.stat.view }}',
+}}
 ```
 
-### 11.8 `mapOne`
+Supports inline `select` to sub-select before mapping:
 
 ```js
-{
-  mapOne: {
-    id: '${{ item.id }}',
-    status: '${{ data.status }}',
-  },
-}
+{ map: {
+  select: 'data.list',          // sub-select first
+  title: '${{ item.title }}',
+}}
 ```
 
-将当前值转换成一个对象。它主要用于 `foreach` 内部：`item` 是原始遍历项，`data` 是当前嵌套步骤的结果。
+#### `mapOne` — Transform one value
 
-### 11.9 `foreach`
+```js
+{ mapOne: {
+  id: '${{ item.id }}',
+  status: '${{ data.status }}',
+}}
+```
+
+Transforms the current value into one object. This is mainly useful inside `foreach`, where `item` is the original iterated item and `data` is the current nested-step result.
+
+#### `foreach` — Run steps for each item
 
 ```js
 {
@@ -931,55 +564,59 @@ Trigger 支持：
     concurrency: 5,
     steps: [
       { fetch: { url: 'https://api.example.com/items/${{ item.id }}' } },
-      {
-        mapOne: {
-          id: '${{ item.id }}',
-          title: '${{ item.title }}',
-          status: '${{ data.status }}',
-        },
-      },
+      { mapOne: {
+        id: '${{ item.id }}',
+        title: '${{ item.title }}',
+        status: '${{ data.status }}',
+      }},
     ],
   },
 }
 ```
 
-从当前 `data` 或命名状态路径读取数组，对每个元素执行嵌套步骤，并把每个元素的最终结果收集成数组。默认并发为 4；`concurrency` 至少为 1。嵌套步骤可以读取 `state`，但嵌套步骤内部的局部 `as` 不会写回共享状态；需要用 `foreach.as` 保存收集后的结果。
+Reads an array from current `data` or a named state path, runs nested steps for each item, and collects the final nested result into an array. Nested steps can read `state`, but their local `as` values do not mutate shared state; use `foreach.as` to save the collected result.
 
-### 11.10 `filter`、`sort`、`limit`
+#### `filter` — Retain items by expression
 
 ```js
 { filter: 'item.play > 10000' }
 { filter: 'index < 5' }
+```
 
+#### `sort` — Sort array
+
+```js
 { sort: { by: 'play', order: 'desc' } }
 { sort: 'title' }
+```
 
+#### `limit` — Slice to N items
+
+```js
 { limit: 20 }
 { limit: '${{ args.limit }}' }
 ```
 
-`sort` 使用字段值的字符串比较，并启用 numeric 排序。
+### Template Expressions
 
-### 11.11 模板表达式
+Templates use `${{ expression }}` syntax. Available context variables:
 
-模板使用 `${{ expression }}` 语法。可用上下文变量：
-
-| 变量 | 可用步骤 | 说明 |
-|------|---------|------|
-| `item` | `map`、`filter`、`foreach` 子步骤 | 当前数组元素 |
-| `index` | `map`、`filter`、`foreach` 子步骤 | 从 0 开始的索引 |
-| `args` | 所有步骤 | 解析后的 CLI 参数，包含默认值 |
-| `data` | 所有步骤 | 当前 pipeline 数据 |
-| `state` | 所有模板 | 通过 `as` 保存的命名状态 |
-| `root` | `map` | 内联 select 前的原始数据 |
+| Variable | Availability | Description |
+|----------|-------------|-------------|
+| `item` | `map`, `filter` | Current array element |
+| `index` | `map`, `filter` | Zero-based position |
+| `args` | All | Parsed CLI args (after applying defaults) |
+| `data` | All | Current pipeline data |
+| `state` | All templates | Named values saved by `as` |
+| `root` | `map` | Original data before inline select |
 
 ---
 
-## 12. 常见适配器模式
+## Adapter Patterns
 
-### 模式 A：公开 JSON API
+### Pattern A — Public JSON API
 
-无需浏览器，直接 HTTP 请求。
+No browser needed. Direct HTTP fetch.
 
 ```js
 export default {
@@ -1007,39 +644,26 @@ export default {
 };
 ```
 
-### 模式 B：需要登录态的 API
+### Pattern B — Login-gated API (browser cookies)
 
-先 `navigate` 建立会话，再在浏览器上下文中请求。
+Navigate first to establish session, then fetch inside browser context.
 
 ```js
 pipeline: [
   { navigate: 'https://example.com' },
-  { browserFetch: { url: '/api/feed' } },
+  { evaluate: `(async () => {
+    const res = await fetch('/api/feed', { credentials: 'include' });
+    return res.json();
+  })()` },
   { select: 'data.items' },
   { map: { title: '${{ item.title }}' } },
   { limit: '${{ args.limit }}' },
 ],
 ```
 
-也可以用 `evaluate` 手写页面上下文逻辑：
+### Pattern C — Multi-request list-detail
 
-```js
-pipeline: [
-  { navigate: 'https://example.com' },
-  {
-    evaluate: `(async () => {
-      const res = await fetch('/api/feed', { credentials: 'include' });
-      return res.json();
-    })()`,
-  },
-  { select: 'data.items' },
-  { map: { title: '${{ item.title }}' } },
-],
-```
-
-### 模式 C：多请求 list-detail
-
-先获取列表，再以受控并发拉取每个条目的详情。
+Fetch a list, fetch each item's detail with bounded concurrency, then return the collected detail rows.
 
 ```js
 pipeline: [
@@ -1052,12 +676,10 @@ pipeline: [
       concurrency: 5,
       steps: [
         { fetch: { url: 'https://api.example.com/items/${{ item.id }}' } },
-        {
-          mapOne: {
-            title: '${{ item.title }}',
-            status: '${{ data.status }}',
-          },
-        },
+        { mapOne: {
+          title: '${{ item.title }}',
+          status: '${{ data.status }}',
+        }},
       ],
     },
   },
@@ -1066,42 +688,38 @@ pipeline: [
 ],
 ```
 
-如果详情 API 需要浏览器 cookie，先 `navigate`，再把同样模式中的 `fetch` 换成 `browserFetch`。
+Use the same pattern with `browserFetch` after `navigate` when detail APIs need browser cookies.
 
-### 模式 D：拦截 XHR/fetch
+### Pattern D — Intercepted XHR/fetch
 
-捕获页面交互触发的 API 调用。
+Capture API calls triggered by page interaction.
 
 ```js
 pipeline: [
-  {
-    intercept: {
-      capture: '/api/timeline',
-      trigger: 'navigate:https://example.com/home',
-      timeout: 10,
-      select: 'data',
-    },
-  },
+  { intercept: {
+    capture: '/api/timeline',
+    trigger: 'navigate:https://example.com/home',
+    timeout: 10,
+    select: 'data',
+  }},
   { map: { title: '${{ item.title }}' } },
   { limit: '${{ args.limit }}' },
 ],
 ```
 
-### 模式 E：DOM 提取
+### Pattern E — DOM extraction
 
-直接从渲染后的 HTML 中抓取数据。
+Scrape data directly from rendered HTML.
 
 ```js
 pipeline: [
   { navigate: 'https://example.com/ranking' },
-  {
-    evaluate: `
-      [...document.querySelectorAll('.item')].map(el => ({
-        title: el.querySelector('.title')?.textContent?.trim(),
-        link: el.querySelector('a')?.href,
-      }))
-    `,
-  },
+  { evaluate: `
+    [...document.querySelectorAll('.item')].map(el => ({
+      title: el.querySelector('.title')?.textContent?.trim(),
+      link:  el.querySelector('a')?.href,
+    }))
+  ` },
   { map: { rank: '${{ index + 1 }}', title: '${{ item.title }}' } },
   { limit: '${{ args.limit }}' },
 ],
@@ -1109,40 +727,44 @@ pipeline: [
 
 ---
 
-## 13. 用 AI 辅助构建适配器
+## Browser-Based Adapters
 
-TAP 附带一个 AI assistant skill：`tap-adapter-author`。它会引导你从站点侦察走到可运行的 `tap <site> <command>` 输出。
+Adapters using `navigate`, `evaluate`, `browserFetch`, or `intercept` require a running agent Chrome instance with remote debugging enabled. The recommended path is:
 
-### 13.1 安装 Skill
+```bash
+tap setup
+tap browser start
+tap doctor
+```
+
+`tap browser start` uses a dedicated automation profile (`~/.chrome-automation-profile` by default) so agent browsing is separate from your daily Chrome profile. Headed Chrome starts minimized by default; use `tap browser start --foreground` if you want the window opened normally, or `tap browser start --headless` for a fully hidden browser. If agent Chrome starts receiving normal system links after your daily Chrome restarts, start daily Chrome first and then run `tap browser restart`. Log into target sites inside this agent Chrome profile only when an adapter needs login state. TAP auto-detects whether an adapter needs the browser by scanning its pipeline steps. A background tab is opened per run where Chrome supports it and closed when done.
+
+---
+
+## Building Adapters with AI
+
+TAP ships with an AI assistant skill (`tap-adapter-author`) that guides you through the full adapter authoring loop — from site reconnaissance to a working `tap <site> <command>` output.
+
+### Setup
+
+Install the skill explicitly for the assistant you use. This copies TAP's adapter-authoring instructions into that assistant's skill directory, so the assistant can guide reconnaissance, schema design, implementation, and verification in the same workflow:
 
 ```bash
 tap skill install claude-code
 tap skill install codex
 ```
 
-自定义 skills 目录：
+Use `--target <dir>` for a custom skills directory, or `--force` to overwrite files in an existing `tap-adapter-author` skill directory:
 
 ```bash
 tap skill install codex --target ~/.codex/skills
-```
-
-覆盖已有 skill：
-
-```bash
 tap skill install claude-code --force
 ```
 
-### 13.2 浏览器登录准备
-
-需要登录态的浏览器适配器，在使用 skill 前先启动 Agent Chrome 并登录目标站点：
+For browser-based adapters (patterns that need login state), launch Chrome with remote debugging and log in to any target sites before running the skill:
 
 ```bash
-tap browser start --foreground
-```
-
-也可以手动启动 Chrome：
-
-```bash
+# macOS
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
   --remote-debugging-port=9222 \
   --user-data-dir=~/.chrome-automation-profile \
@@ -1150,41 +772,47 @@ tap browser start --foreground
   --no-default-browser-check
 ```
 
-Skill 复用已登录的 Agent Chrome profile，不会自动处理认证。
+The skill reuses the logged-in agent Chrome profile — it does not handle authentication itself. This is intentionally separate from your daily Chrome profile.
 
-### 13.3 工作流
+### Workflow
 
-调用 skill 后描述目标：
+Invoke the skill and describe what you want:
 
-```text
+```
 /tap-adapter-author
 
-我想抓取 Hacker News 的热门帖子。
+I want to fetch the top posts from Hacker News.
 ```
 
-Skill 会引导完成：
+The skill will:
 
-1. 判断获取模式：公开 API、需要登录、list-detail、拦截 XHR 或 DOM 抓取。
-2. 验证端点：确认 API 或页面能返回预期数据。
-3. 解码字段结构：把响应字段映射到 schema 字段。
-4. 确认 schema：核对字段名、raw path、类型、说明、单位、格式和样例。
-5. 组装 pipeline：生成包含 `output.fields` 的完整适配器。
-6. 安装适配器：写入 `~/.tap/adapters/<site>/<command>.js`。
-7. 验证：运行命令并确认 envelope schema 和 items。
+1. **Identify the fetch pattern** — public API, login-gated, multi-request list-detail, intercepted XHR, or DOM scraping
+2. **Validate the endpoint** — confirm the API returns the expected data
+3. **Decode the field structure** — map response fields to schema-confirmed output fields
+4. **Confirm the schema** — review field names, raw paths, types, descriptions, units, formats, and examples
+5. **Assemble the pipeline** — produce a complete adapter file with `output.fields`
+6. **Install it** — write to `~/.tap/adapters/<site>/<command>.js`
+7. **Verify** — run `tap <site> <command>` and confirm the envelope schema and items
 
-决策树：
+### Decision Tree
 
-```text
-想抓什么数据？
+```
+What data do you want?
   │
-  ├─ 公开 JSON API（curl 可直接访问）      → 模式 A：直接 fetch
-  ├─ 需要浏览器登录/Session              → 模式 B：navigate + browserFetch
-  ├─ list-detail 或关联 enrichment 请求  → 模式 C：as + from + foreach
-  ├─ XHR 隐藏在页面交互后                → 模式 D：intercept
-  └─ 数据只在 DOM 里                     → 模式 E：navigate + evaluate(DOM)
+  ├─ Public JSON API (curl works)          → Pattern A: direct fetch
+  ├─ Needs browser login/session           → Pattern B: navigate + browserFetch
+  ├─ List-detail or enrichment requests    → Pattern C: as + from + foreach
+  ├─ XHR hidden behind page interaction    → Pattern D: intercept
+  └─ Data only in DOM                      → Pattern E: navigate + evaluate(DOM)
 ```
 
-TAP 默认不内置具体站点示例适配器。使用 `tap-adapter-author` 创建经过 schema 确认的适配器后再运行：
+If stuck, the skill has a fallback path for each failure mode (403, empty array, missing fields, etc).
+
+---
+
+## Examples
+
+TAP no longer ships site-specific example adapters by default. Use `tap-adapter-author` to create a schema-confirmed adapter under `~/.tap/adapters/<site>/<command>.js`, then run it:
 
 ```bash
 tap <site> <command> --limit 5
@@ -1192,47 +820,47 @@ tap <site> <command> --limit 5
 
 ---
 
-## 14. 项目结构
+## Project Structure
 
-```text
+```
 tap/
-├── bin/cli.js              # 入口，委托给 src/cli.js
+├── bin/cli.js              # Entry point — delegates to src/cli.js
 ├── src/
-│   ├── cli.js              # 参数解析、help 路由、pipeline 编排
-│   ├── executor.js         # Pipeline 执行引擎
-│   ├── cdp.js              # Chrome DevTools Protocol 会话
-│   ├── adapters.js         # 适配器发现与加载
-│   ├── adapter-manager.js  # 适配器包安装/列表/移除
-│   ├── schema.js           # 机器可读命令 schema 生成
-│   ├── output.js           # JSON 格式化输出
-│   ├── help.js             # Help 文本生成
-│   ├── browser.js          # Agent Chrome 生命周期管理
-│   ├── doctor.js           # 本地环境诊断
-│   ├── setup.js            # TAP 初始化
-│   ├── skills.js           # AI skill 安装
-│   ├── config.js           # 配置文件读取
-│   └── bundled-skills.js   # 编译二进制内嵌的 skill 资源
-├── skills/                 # 内置 assistant skills 的源码副本
+│   ├── cli.js              # Arg parsing, help routing, pipeline orchestration
+│   ├── executor.js         # Pipeline execution engine
+│   ├── cdp.js              # Chrome DevTools Protocol session
+│   ├── adapters.js         # Adapter discovery and loading
+│   ├── adapter-manager.js  # Adapter pack install/list/remove
+│   ├── schema.js           # Machine-readable command schema generation
+│   ├── output.js           # JSON formatter
+│   ├── help.js             # Help text generation
+│   ├── browser.js          # Agent Chrome lifecycle management
+│   ├── doctor.js           # Local setup diagnostics
+│   ├── setup.js            # TAP initialization
+│   ├── skills.js           # AI skill installation
+│   ├── config.js           # Config file reading
+│   └── bundled-skills.js   # Embedded skill assets for compiled binaries
+├── skills/                 # Source copy of bundled assistant skills
 │   └── tap-adapter-author/
 └── npm/
-    ├── run.js              # npm bin wrapper，选择平台包
-    ├── install.js          # 本地开发时设置可执行权限
-    ├── platforms/          # 生成的 optional 二进制平台包
+    ├── run.js              # npm bin wrapper; selects the platform package
+    ├── install.js          # local development executable-bit helper
+    ├── platforms/          # generated optional binary packages
     │   ├── tap-darwin-arm64/
     │   ├── tap-darwin-x64/
     │   └── tap-linux-x64/
-    └── skills/             # npm 包中的内置 assistant skills 副本
+    └── skills/             # npm package copy of bundled assistant skills
         └── tap-adapter-author/
 ```
 
-用户适配器存放于 `~/.tap/adapters/`。开发或其他工作流需要指定自定义适配器目录时，使用 `TAP_ADAPTERS_DIR`。
+User adapters live in `~/.tap/adapters/`. Use `TAP_ADAPTERS_DIR` to point TAP at a custom adapter directory during development or from another workflow.
 
 ---
 
-## 15. 依赖与运行时
+## Dependencies
 
-| 包 | 用途 |
-|----|------|
-| `ws` ^8.0.0 | CDP 通信的 WebSocket 客户端 |
+| Package | Purpose |
+|---------|---------|
+| `ws` ^8.0.0 | WebSocket client for CDP communication |
 
-源码运行和构建使用 Bun。编译后的二进制文件自包含，运行时不依赖 Bun。
+Runtime: [Bun](https://bun.sh) (build + execution). The compiled binary is self-contained and does not require Bun at runtime.
