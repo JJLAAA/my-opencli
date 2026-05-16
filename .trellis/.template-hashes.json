@@ -85,7 +85,7 @@
     "AGENTS.md": "cde5d2ea550bd70ea528197074a74a2ded8f5b8802b557e69c3e3cb537d33182",
     ".claude/commands/trellis/finish-work.md": "d6aa570ab684f57e4845de2d84a1ff6d9f0908e04c5a56e14fd70ae739c369fc",
     ".claude/hooks/inject-subagent-context.py": "3f2bafe1af36803aba1ad50947104aed817d77918540a4025db73aa0b249e3a2",
-    ".claude/hooks/session-start.py": "6346cc6595ef8e7604a1002f16404a222a86bbfe1551da12c85b2cdf8b89747b",
+    ".claude/hooks/session-start.py": "b905a58b2232284883623bf38567c8170eec2ab60e3ddfb89040078eafdd3317",
     ".claude/settings.json": "1a65892b2b161910468970ab30ebc3f8216241640f75fccbe4be5552c58a2752",
     ".codex/hooks/session-start.py": "bc3bd73ad89fc872c14efc8a548f4d7ff0b0afd4bb667e9db49fe468dcafd326",
     ".codex/hooks.json": "522ba3c488c100027783e52ecff84c0bd799852dd77ad3f1936e86db105f01d6",
